@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Family Tracker - Setup Scripts
 # Comando da eseguire sul Raspberry Pi per rendere gli script eseguibili
 
