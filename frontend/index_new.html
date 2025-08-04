@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Expense Tracker - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Family Expense Tracker</h1>
+        
+        <!-- Navigazione tab -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('expenses')">💸 Spese</button>
+            <button class="tab-btn" onclick="switchTab('incomes')">💰 Entrate</button>
+        </div>
+        
+        <!-- Dashboard Overview -->
+        <div class="card" id="dashboardSection">
+            <h2>📊 Riepilogo Familiare</h2>
+            
+            <!-- Filtri periodo -->
+            <div class="dashboard-filters">
+                <label for="dashboardPeriod">Periodo:</label>
+                <select id="dashboardPeriod">
+                    <option value="month">Questo Mese</option>
+                    <option value="year">Quest'Anno</option>
+                </select>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card income">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Entrate Totali</div>
+                        <div class="kpi-value" id="totalIncomes">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card expense">
+                    <div class="kpi-icon">💸</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Spese Totali</div>
+                        <div class="kpi-value" id="totalExpenses">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card balance">
+                    <div class="kpi-icon">📊</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Bilancio</div>
+                        <div class="kpi-value" id="totalBalance">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card savings">
+                    <div class="kpi-icon">🎯</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Tasso Risparmio</div>
+                        <div class="kpi-value" id="savingsRate">0%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grafici Dashboard -->
+            <div class="dashboard-charts">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>💰 Entrate vs 💸 Spese</h3>
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>👥 Bilancio per Utente</h3>
+                        <canvas id="userBalanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>📈 Trend Mensile</h3>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🏷️ Top Categorie Spese</h3>
+                        <canvas id="topCategoriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sezione aggiunta spesa -->
+        <div class="card" id="expenseSection" style="display: none;">
+            <h2>Aggiungi Spesa</h2>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="date">Data:</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoria:</label>
+                    <select id="category" required>
+                        <option value="">Seleziona categoria...</option>
+                    </select>
+                    <button type="button" id="addCategoryBtn">+</button>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Importo:</label>
+                    <input type="number" id="amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="currency">Valuta:</label>
+                    <select id="currency" required>
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user">Utente:</label>
+                    <select id="user" required>
+                        <option value="">Seleziona utente...</option>
+                    </select>
+                </div>
+                <button type="submit">Aggiungi Spesa</button>
+            </form>
+        </div>
+
+        <!-- Sezione aggiunta entrata -->
+        <div class="card" id="incomeSection" style="display: none;">
+            <h2>Aggiungi Entrata</h2>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label for="incomeDate">Data:</label>
+                    <input type="date" id="incomeDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeCategory">Categoria:</label>
+                    <select id="incomeCategory" required>
+                        <option value="">Seleziona categoria...</option>
+                        <option value="Stipendio">Stipendio</option>
+                        <option value="Bonus">Bonus</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Investimenti">Investimenti</option>
+                        <option value="Regalo">Regalo</option>
+                        <option value="Vendita">Vendita</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="incomeAmount">Importo:</label>
+                    <input type="number" id="incomeAmount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeCurrency">Valuta:</label>
+                    <select id="incomeCurrency" required>
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="incomeUser">Utente:</label>
+                    <select id="incomeUser" required>
+                        <option value="">Seleziona utente...</option>
+                    </select>
+                </div>
+                <button type="submit">Aggiungi Entrata</button>
+            </form>
+        </div>
+
+        <!-- Sezione filtri e report -->
+        <div class="card">
+            <h2>Report Mensile</h2>
+            <div class="filters">
+                <label for="reportYear">Anno:</label>
+                <input type="number" id="reportYear" value="2025" min="2020" max="2030">
+                <label for="reportMonth">Mese:</label>
+                <select id="reportMonth">
+                    <option value="1">Gennaio</option>
+                    <option value="2">Febbraio</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Aprile</option>
+                    <option value="5">Maggio</option>
+                    <option value="6">Giugno</option>
+                    <option value="7">Luglio</option>
+                    <option value="8" selected>Agosto</option>
+                    <option value="9">Settembre</option>
+                    <option value="10">Ottobre</option>
+                    <option value="11">Novembre</option>
+                    <option value="12">Dicembre</option>
+                </select>
+                <button id="loadReportBtn">Carica Report</button>
+            </div>
+            
+            <div class="report-summary" id="reportSummary">
+                <!-- Report mensile sarà caricato qui -->
+            </div>
+        </div>
+
+        <!-- Sezione transazioni -->
+        <div class="card">
+            <div class="section-header">
+                <h2 id="recentTitle">Dashboard Famiglia</h2>
+                <div class="header-controls">
+                    <div class="last-update">
+                        Ultimo aggiornamento: <span id="lastUpdate">--:--</span>
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn" title="Aggiorna ora">🔄</button>
+                </div>
+            </div>
+            <div class="expenses-list" id="itemsList">
+                <!-- Le transazioni verranno caricate dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per aggiungere categoria -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Aggiungi Categoria</h3>
+            <input type="text" id="newCategoryName" placeholder="Nome categoria">
+            <button id="saveCategoryBtn">Salva</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
