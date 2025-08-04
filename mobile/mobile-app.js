@@ -35,6 +35,8 @@ let isOnline = navigator.onLine;
 let categories = [];
 let users = [];
 let offlineExpenses = [];
+let offlineIncomes = [];
+let currentTab = 'expenses'; // 'expenses' o 'incomes'
 
 // Service Worker registration
 if ('serviceWorker' in navigator) {
@@ -48,11 +50,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setTodayDate();
     
-    // Load offline expenses from localStorage PRIMA di tutto
+    // Load offline data from localStorage PRIMA di tutto
     loadOfflineExpenses();
+    loadOfflineIncomes();
     
     await loadInitialData();
-    await loadRecentExpenses();
+    await loadRecentItems();
     
     // Aggiorna lo status dopo aver caricato tutto
     updateSyncStatus();
@@ -60,13 +63,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inizializza funzionalità di sync
     initializeSync();
     
-    console.log(`App inizializzata - ${offlineExpenses.length} spese offline in coda`);
+    console.log(`App inizializzata - ${offlineExpenses.length} spese e ${offlineIncomes.length} entrate offline in coda`);
 });
 
 // Setup event listeners
 function setupEventListeners() {
     // Form submit
     document.getElementById('mobileExpenseForm').addEventListener('submit', handleExpenseSubmit);
+    document.getElementById('mobileIncomeForm').addEventListener('submit', handleIncomeSubmit);
     
     // Online/offline events
     window.addEventListener('online', handleOnline);
@@ -134,14 +138,22 @@ function populateCategorySelect() {
 
 // Popola select utenti
 function populateUserSelect() {
-    const select = document.getElementById('mobileUser');
-    select.innerHTML = '<option value="">Chi ha speso?</option>';
+    const expenseSelect = document.getElementById('mobileUser');
+    const incomeSelect = document.getElementById('incomeUser');
+    
+    expenseSelect.innerHTML = '<option value="">Chi ha speso?</option>';
+    incomeSelect.innerHTML = '<option value="">Chi ha guadagnato?</option>';
     
     users.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user;
-        option.textContent = user;
-        select.appendChild(option);
+        const expenseOption = document.createElement('option');
+        expenseOption.value = user;
+        expenseOption.textContent = user;
+        expenseSelect.appendChild(expenseOption);
+        
+        const incomeOption = document.createElement('option');
+        incomeOption.value = user;
+        incomeOption.textContent = user;
+        incomeSelect.appendChild(incomeOption);
     });
 }
 
@@ -149,6 +161,7 @@ function populateUserSelect() {
 function setTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('mobileDate').value = today;
+    document.getElementById('incomeDate').value = today;
 }
 
 // Gestione submit spesa
@@ -218,70 +231,162 @@ async function handleExpenseSubmit(event) {
 // Reset form
 function resetForm() {
     document.getElementById('mobileExpenseForm').reset();
+    document.getElementById('mobileIncomeForm').reset();
     setTodayDate();
 }
 
-// Carica spese recenti
-async function loadRecentExpenses() {
-    if (!isOnline) {
-        displayOfflineExpenses();
+// Gestione tab navigation
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Aggiorna pulsanti tab
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Mostra/nascondi sezioni
+    const expenseSection = document.getElementById('expenseSection');
+    const incomeSection = document.getElementById('incomeSection');
+    const recentTitle = document.getElementById('recentTitle');
+    
+    if (tabName === 'expenses') {
+        expenseSection.style.display = 'block';
+        incomeSection.style.display = 'none';
+        recentTitle.textContent = '📋 Spese Recenti';
+    } else {
+        expenseSection.style.display = 'none';
+        incomeSection.style.display = 'block';
+        recentTitle.textContent = '📋 Entrate Recenti';
+    }
+    
+    // Ricarica la lista appropriata
+    loadRecentItems();
+}
+
+// Gestione submit entrata
+async function handleIncomeSubmit(event) {
+    event.preventDefault();
+    
+    const income = {
+        date: document.getElementById('incomeDate').value,
+        category: document.getElementById('incomeCategory').value,
+        amount: parseFloat(document.getElementById('incomeAmount').value),
+        currency: document.getElementById('incomeCurrency').value,
+        user: document.getElementById('incomeUser').value,
+        timestamp: new Date().toISOString(),
+        id: Date.now() // ID temporaneo unico
+    };
+
+    // Validazione
+    if (!income.date || !income.category || !income.amount || !income.currency || !income.user) {
+        showToast('Compila tutti i campi', 'error');
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/expenses`, { headers });
-        const expenses = await response.json();
-        displayExpenses(expenses.slice(0, 10)); // Solo le prime 10
+        if (isOnline) {
+            // Tenta di salvare online
+            const response = await fetch(`${API_BASE}/incomes`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(income)
+            });
+
+            if (response.ok) {
+                showToast('Entrata aggiunta online!', 'success');
+                resetForm();
+                await loadRecentItems();
+                
+                // Sincronizza eventuali entrate offline in coda
+                await syncOfflineIncomes();
+                return;
+            }
+        }
+        
+        // Se offline o errore online, salva in locale
+        throw new Error('Salvataggio offline');
+        
     } catch (error) {
-        console.error('Errore nel caricamento spese:', error);
-        displayOfflineExpenses();
+        console.log('Salvataggio offline entrata:', error.message);
+        
+        // Salva sempre offline come backup
+        income.offline = true;
+        offlineIncomes.push(income);
+        saveOfflineIncomes();
+        
+        const message = isOnline ? 'Salvato offline (errore server)' : 'Salvato offline';
+        showToast(message, 'warning');
+        resetForm();
+        displayOfflineItems();
+        
+        // Aggiorna immediatamente l'interfaccia
+        updateSyncStatus();
+        
+        // Se torni online, sincronizza automaticamente
+        scheduleSync();
     }
 }
 
-// Mostra spese
-function displayExpenses(expenses) {
-    console.log(`displayExpenses chiamata con ${expenses.length} spese`);
+// Carica transazioni recenti (spese o entrate)
+async function loadRecentItems() {
+    if (!isOnline) {
+        displayOfflineItems();
+        return;
+    }
+
+    try {
+        const endpoint = currentTab === 'expenses' ? '/expenses' : '/incomes';
+        const response = await fetch(`${API_BASE}${endpoint}`, { headers });
+        const items = await response.json();
+        displayItems(items.slice(0, 10)); // Solo le prime 10
+    } catch (error) {
+        console.error(`Errore nel caricamento ${currentTab}:`, error);
+        displayOfflineItems();
+    }
+}
+
+// Mostra transazioni (spese o entrate)
+function displayItems(items) {
+    console.log(`displayItems chiamata con ${items.length} ${currentTab}`);
     
-    const container = document.getElementById('mobileExpensesList');
+    const container = document.getElementById('mobileItemsList');
     if (!container) {
-        console.error('Container mobileExpensesList non trovato!');
+        console.error('Container mobileItemsList non trovato!');
         return;
     }
     
-    console.log('Container mobileExpensesList trovato:', container);
-    
-    if (expenses.length === 0) {
-        console.log('Nessuna spesa da mostrare');
-        container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Nessuna spesa registrata</p>';
+    if (items.length === 0) {
+        const label = currentTab === 'expenses' ? 'spese' : 'entrate';
+        container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Nessuna ${label} registrata</p>`;
         return;
     }
     
-    console.log(`Rendering ${expenses.length} spese...`);
-    expenses.forEach((expense, index) => {
-        console.log(`Spesa ${index + 1}: ${expense.category} - ${expense.amount} (offline: ${expense.offline})`);
-    });
-    
-    const html = expenses.map(expense => `
-        <div class="expense-item ${expense.offline ? 'offline-item' : ''}">
-            <div class="expense-left">
-                <div class="expense-category">${expense.category}</div>
-                <div class="expense-user">Utente: ${expense.user}</div>
-                <div class="expense-date">Data: ${formatDate(expense.date)}</div>
-                ${expense.offline ? '<div style="color: #e74c3c; font-size: 0.8em;">Da sincronizzare</div>' : ''}
+    const html = items.map(item => {
+        const isExpense = currentTab === 'expenses';
+        const sign = isExpense ? '-' : '+';
+        const colorClass = isExpense ? 'expense-amount' : 'income-amount';
+        const actionLabel = isExpense ? 'Speso da' : 'Guadagnato da';
+        
+        return `
+            <div class="expense-item ${item.offline ? 'offline-item' : ''}">
+                <div class="expense-left">
+                    <div class="expense-category">${item.category}</div>
+                    <div class="expense-user">${actionLabel}: ${item.user}</div>
+                    <div class="expense-date">Data: ${formatDate(item.date)}</div>
+                    ${item.offline ? '<div style="color: #e74c3c; font-size: 0.8em;">Da sincronizzare</div>' : ''}
+                </div>
+                <div class="${colorClass}">${sign}${item.amount.toFixed(2)} ${item.currency}</div>
             </div>
-            <div class="expense-amount">${expense.amount.toFixed(2)} ${expense.currency}</div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     container.innerHTML = html;
-    console.log(`HTML aggiornato nel container (lunghezza: ${html.length} caratteri)`);
 }
 
-// Mostra spese offline
-function displayOfflineExpenses() {
-    console.log(`displayOfflineExpenses chiamata con ${offlineExpenses.length} spese`);
-    console.log('Spese offline:', offlineExpenses.map(e => `${e.category}: ${e.amount}`));
-    displayExpenses(offlineExpenses.slice(0, 10));
+// Mostra transazioni offline
+function displayOfflineItems() {
+    const items = currentTab === 'expenses' ? offlineExpenses : offlineIncomes;
+    console.log(`displayOfflineItems chiamata con ${items.length} ${currentTab}`);
+    displayItems(items.slice(0, 10));
 }
 
 // Gestione online/offline
@@ -292,9 +397,9 @@ function handleOnline() {
     // Aggiorna immediatamente l'interfaccia
     updateSyncStatus();
     
-    const pendingCount = offlineExpenses.length;
-    if (pendingCount > 0) {
-        showToast(`📡 Connesso! Sincronizzazione ${pendingCount} spese...`, 'success');
+    const totalPending = offlineExpenses.length + offlineIncomes.length;
+    if (totalPending > 0) {
+        showToast(`📡 Connesso! Sincronizzazione ${totalPending} items...`, 'success');
     } else {
         showToast('📡 Connesso!', 'success');
     }
@@ -305,6 +410,10 @@ function handleOnline() {
         
         if (offlineExpenses.length > 0) {
             await syncOfflineExpenses();
+        }
+        
+        if (offlineIncomes.length > 0) {
+            await syncOfflineIncomes();
         }
         
         scheduleSync(); // Avvia sync automatico
@@ -320,7 +429,7 @@ function handleOffline() {
         clearInterval(window.syncInterval);
     }
     
-    showToast('� Offline - Le spese verranno salvate localmente', 'warning');
+    showToast('📴 Offline - I dati verranno salvati localmente', 'warning');
 }
 
 // Aggiorna status sincronizzazione
@@ -328,9 +437,9 @@ function updateSyncStatus() {
     const syncStatus = document.getElementById('syncStatus');
     const syncText = document.getElementById('syncText');
     const syncBtn = document.getElementById('manualSyncBtn');
-    const pendingCount = offlineExpenses.length;
+    const totalPending = offlineExpenses.length + offlineIncomes.length;
     
-    console.log(`🔍 updateSyncStatus: online=${isOnline}, pending=${pendingCount}`);
+    console.log(`🔍 updateSyncStatus: online=${isOnline}, spese=${offlineExpenses.length}, entrate=${offlineIncomes.length}`);
     
     if (!syncStatus || !syncText) {
         console.error('❌ Elementi syncStatus o syncText non trovati nel DOM');
@@ -339,17 +448,17 @@ function updateSyncStatus() {
     
     if (!isOnline) {
         syncStatus.className = 'sync-status offline';
-        syncText.textContent = `📴 Offline${pendingCount > 0 ? ` (${pendingCount} in coda)` : ''}`;
+        syncText.textContent = `📴 Offline${totalPending > 0 ? ` (${totalPending} in coda)` : ''}`;
         if (syncBtn) {
             syncBtn.style.display = 'none';
             console.log('🔍 Nascosto pulsante sync (offline)');
         }
-    } else if (pendingCount > 0) {
+    } else if (totalPending > 0) {
         syncStatus.className = 'sync-status pending';
-        syncText.textContent = `🔄 ${pendingCount} da sincronizzare`;
+        syncText.textContent = `🔄 ${totalPending} da sincronizzare`;
         if (syncBtn) {
             syncBtn.style.display = 'block';
-            console.log('🔍 Mostrato pulsante sync (spese in coda)');
+            console.log('🔍 Mostrato pulsante sync (items in coda)');
         }
     } else {
         syncStatus.className = 'sync-status online';
@@ -426,31 +535,102 @@ async function syncOfflineExpenses() {
     console.log('🔄 Aggiornamento interfaccia...');
     updateSyncStatus();
     
-    if (synced > 0) {
-        showToast(`✅ ${synced} spese sincronizzate!`, 'success');
-        
-        console.log('🔄 Caricamento spese recenti...');
-        await loadRecentExpenses();
-        
-        // Se ci sono ancora spese offline, mostra quelle
-        if (offlineExpenses.length > 0) {
-            console.log(`📋 Mostro ${offlineExpenses.length} spese offline rimanenti`);
-            displayOfflineExpenses();
-        }
-        
-        // Forza aggiornamento del pulsante sync
-        const syncBtn = document.getElementById('manualSyncBtn');
-        if (syncBtn) {
-            syncBtn.style.display = offlineExpenses.length > 0 ? 'block' : 'none';
-            console.log(`🔘 Pulsante sync ${offlineExpenses.length > 0 ? 'mostrato' : 'nascosto'}`);
-        }
-    }
-    
-    if (failed > 0) {
+        if (synced > 0) {
+            showToast(`✅ ${synced} spese sincronizzate!`, 'success');
+            
+            console.log('🔄 Caricamento spese recenti...');
+            await loadRecentItems();
+            
+            // Se ci sono ancora spese offline, mostra quelle
+            if (offlineExpenses.length > 0) {
+                console.log(`📋 Mostro ${offlineExpenses.length} spese offline rimanenti`);
+                displayOfflineItems();
+            }
+            
+            // Forza aggiornamento del pulsante sync
+            const syncBtn = document.getElementById('manualSyncBtn');
+            if (syncBtn) {
+                const totalPending = offlineExpenses.length + offlineIncomes.length;
+                syncBtn.style.display = totalPending > 0 ? 'block' : 'none';
+                console.log(`🔘 Pulsante sync ${totalPending > 0 ? 'mostrato' : 'nascosto'}`);
+            }
+        }    if (failed > 0) {
         showToast(`⚠️ ${failed} spese non sincronizzate`, 'warning');
     }
     
     console.log(`📊 Sync completato: ${synced} ok, ${failed} failed, ${offlineExpenses.length} rimanenti`);
+}
+
+// Sincronizza entrate offline
+async function syncOfflineIncomes() {
+    console.log(`🚀 syncOfflineIncomes chiamata - online: ${isOnline}, entrate: ${offlineIncomes.length}`);
+    
+    if (!isOnline || offlineIncomes.length === 0) {
+        console.log(`⏹️ Sync entrate saltato - online: ${isOnline}, entrate: ${offlineIncomes.length}`);
+        return;
+    }
+    
+    console.log(`🔄 Sincronizzazione di ${offlineIncomes.length} entrate offline...`);
+    
+    showToast(`🔄 Sincronizzazione ${offlineIncomes.length} entrate...`, 'info');
+    
+    const incomesToSync = [...offlineIncomes];
+    const syncedIds = [];
+    let synced = 0;
+    let failed = 0;
+    
+    for (const income of incomesToSync) {
+        try {
+            const { id, offline, timestamp, ...incomeData } = income;
+            
+            console.log(`📤 Tentativo sync entrata ID ${id}: ${incomeData.category} - ${incomeData.amount}`);
+            
+            const response = await fetch(`${API_BASE}/incomes`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(incomeData)
+            });
+            
+            if (response.ok) {
+                syncedIds.push(income.id);
+                synced++;
+                console.log(`✅ Entrata sincronizzata: ${income.category} - ${income.amount}${income.currency}`);
+            } else {
+                failed++;
+                const errorText = await response.text();
+                console.error(`❌ Errore sync entrata: ${response.status} - ${errorText}`);
+            }
+        } catch (error) {
+            console.error('❌ Errore sincronizzazione entrata:', error);
+            failed++;
+        }
+    }
+    
+    // Rimuovi entrate sincronizzate
+    if (syncedIds.length > 0) {
+        const oldLength = offlineIncomes.length;
+        offlineIncomes = offlineIncomes.filter(income => !syncedIds.includes(income.id));
+        saveOfflineIncomes();
+        console.log(`🗑️ Rimosse ${syncedIds.length} entrate sincronizzate dall'array offline`);
+    }
+    
+    // Aggiorna interfaccia
+    updateSyncStatus();
+    
+    if (synced > 0) {
+        showToast(`✅ ${synced} entrate sincronizzate!`, 'success');
+        await loadRecentItems();
+        
+        if (offlineIncomes.length > 0) {
+            displayOfflineItems();
+        }
+    }
+    
+    if (failed > 0) {
+        showToast(`⚠️ ${failed} entrate non sincronizzate`, 'warning');
+    }
+    
+    console.log(`📊 Sync entrate completato: ${synced} ok, ${failed} failed, ${offlineIncomes.length} rimanenti`);
 }
 
 // Programma sync automatico
@@ -459,9 +639,11 @@ function scheduleSync() {
     
     // Prova a sincronizzare ogni 30 secondi quando online
     window.syncInterval = setInterval(async () => {
-        if (isOnline && offlineExpenses.length > 0) {
+        const totalPending = offlineExpenses.length + offlineIncomes.length;
+        if (isOnline && totalPending > 0) {
             console.log('⏰ Sync automatico programmato...');
             await syncOfflineExpenses();
+            await syncOfflineIncomes();
         }
     }, 30000);
 }
@@ -474,6 +656,16 @@ function saveOfflineExpenses() {
 function loadOfflineExpenses() {
     const stored = localStorage.getItem('offlineExpenses');
     offlineExpenses = stored ? JSON.parse(stored) : [];
+}
+
+// LocalStorage per entrate offline
+function saveOfflineIncomes() {
+    localStorage.setItem('offlineIncomes', JSON.stringify(offlineIncomes));
+}
+
+function loadOfflineIncomes() {
+    const stored = localStorage.getItem('offlineIncomes');
+    offlineIncomes = stored ? JSON.parse(stored) : [];
 }
 
 // Utility functions
@@ -502,7 +694,8 @@ async function manualSync() {
         return;
     }
     
-    if (offlineExpenses.length === 0) {
+    const totalPending = offlineExpenses.length + offlineIncomes.length;
+    if (totalPending === 0) {
         showToast('✅ Tutto già sincronizzato!', 'success');
         return;
     }
@@ -518,6 +711,7 @@ async function manualSync() {
     
     try {
         await syncOfflineExpenses();
+        await syncOfflineIncomes();
     } finally {
         // Riabilita il pulsante
         if (syncBtn) {
@@ -529,16 +723,18 @@ async function manualSync() {
 
 // Inizializza sync automatico all'avvio
 function initializeSync() {
-    console.log(`🔧 Inizializzazione sync - Online: ${isOnline}, Spese offline: ${offlineExpenses.length}`);
+    const totalOffline = offlineExpenses.length + offlineIncomes.length;
+    console.log(`🔧 Inizializzazione sync - Online: ${isOnline}, Items offline: ${totalOffline}`);
     
-    // Avvia sync automatico se online e ci sono spese da sincronizzare
-    if (isOnline && offlineExpenses.length > 0) {
+    // Avvia sync automatico se online e ci sono items da sincronizzare
+    if (isOnline && totalOffline > 0) {
         scheduleSync();
         console.log('⏰ Sync automatico programmato');
         
         // Avvia una sincronizzazione immediata
-        setTimeout(() => {
-            syncOfflineExpenses();
+        setTimeout(async () => {
+            await syncOfflineExpenses();
+            await syncOfflineIncomes();
         }, 2000);
     }
     

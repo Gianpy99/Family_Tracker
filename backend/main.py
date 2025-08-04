@@ -34,6 +34,23 @@ class UpdateExpense(BaseModel):
     currency: str
     user: str
 
+# Modelli Entrate
+class Income(BaseModel):
+    id: Optional[int] = None
+    date: str
+    category: str
+    amount: float
+    currency: str
+    user: str
+
+class UpdateIncome(BaseModel):
+    id: int
+    date: str
+    category: str
+    amount: float
+    currency: str
+    user: str
+
 # FastAPI app
 app = FastAPI()
 
@@ -104,6 +121,17 @@ def startup():
             c.execute("INSERT OR IGNORE INTO users (name) VALUES (?)", (user,))
         except:
             pass
+    # Crea tabella per le entrate
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS incomes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        category TEXT,
+        amount REAL,
+        currency TEXT,
+        user TEXT
+    )
+    """)
     
     conn.commit()
     conn.close()

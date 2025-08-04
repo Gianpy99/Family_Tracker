@@ -48,6 +48,35 @@ body {
     animation: spin 1s linear infinite;
 }
 
+/* Navigazione a tab */
+.tab-navigation {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px 10px;
+    border: none;
+    background: transparent;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+    background: white;
+    border-bottom-color: #3498db;
+    color: #3498db;
+    font-weight: bold;
+}
+
+.tab-btn:hover {
+    background: #e9ecef;
+}
+
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -125,6 +154,15 @@ body {
     transform: translateY(0);
 }
 
+.submit-btn.income-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+.submit-btn.income-btn:hover {
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+}
+
 .recent-expenses {
     background: white;
     border-radius: 12px;
@@ -188,6 +226,12 @@ body {
     font-weight: bold;
     font-size: 1.1em;
     color: #e74c3c;
+}
+
+.income-amount {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #27ae60;
 }
 
 .toast {
