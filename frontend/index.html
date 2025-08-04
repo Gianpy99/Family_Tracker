@@ -1,30 +1,8 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta char                <div class="kpi-card income">
-                 <div class="chart-row">
-                    <div class="chart-container">
-                        <h3>💰 Entrate vs 💸 Spese</h3>
-                        <canvas id="balanceChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>👥 Bilancio per Utente</h3>
-                        <canvas id="userBalanceChart"></canvas>
-                    </div>
-                </div>         <div class="kpi-icon">💰</div>
-                    <div class="kpi-content">
-                        <div class="kpi-label">Entrate Totali</div>
-                        <div class="kpi-value" id="totalIncomes">€ 0.00</div>
-                    </div>
-                </div>
-                
-                <div class="kpi-card expense">
-                    <div class="kpi-icon">💸</div>
-                    <div class="kpi-content">
-                        <div class="kpi-label">Spese Totali</div>
-                        <div class="kpi-value" id="totalExpenses">€ 0.00</div>
-                    </div>
-                </div>   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Expense Tracker - Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -35,14 +13,14 @@
         
         <!-- Navigazione tab -->
         <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-            <button class="tab-btn" onclick="switchTab('expenses')">💸 Spese</button>
-            <button class="tab-btn" onclick="switchTab('incomes')">💰 Entrate</button>
+            <button class="tab-btn active" onclick="switchTab('dashboard')">[DASH] Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('expenses')">[SPESE] Spese</button>
+            <button class="tab-btn" onclick="switchTab('incomes')">[ENTRATE] Entrate</button>
         </div>
         
         <!-- Dashboard Overview -->
         <div class="card" id="dashboardSection">
-            <h2>📊 Riepilogo Familiare</h2>
+            <h2>[DASHBOARD] Riepilogo Familiare</h2>
             
             <!-- Filtri periodo -->
             <div class="dashboard-filters">
@@ -54,9 +32,9 @@
             </div>
             
             <!-- KPI Cards -->
-            <div class="kpi-container">
+            <div class="kpi-grid">
                 <div class="kpi-card income">
-                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-icon">[€]</div>
                     <div class="kpi-content">
                         <div class="kpi-label">Entrate Totali</div>
                         <div class="kpi-value" id="totalIncomes">€ 0.00</div>
@@ -64,7 +42,7 @@
                 </div>
                 
                 <div class="kpi-card expense">
-                    <div class="kpi-icon">�</div>
+                    <div class="kpi-icon">[OUT]</div>
                     <div class="kpi-content">
                         <div class="kpi-label">Spese Totali</div>
                         <div class="kpi-value" id="totalExpenses">€ 0.00</div>
@@ -72,7 +50,7 @@
                 </div>
                 
                 <div class="kpi-card balance">
-                    <div class="kpi-icon">📊</div>
+                    <div class="kpi-icon">[BAL]</div>
                     <div class="kpi-content">
                         <div class="kpi-label">Bilancio</div>
                         <div class="kpi-value" id="totalBalance">€ 0.00</div>
@@ -80,7 +58,7 @@
                 </div>
                 
                 <div class="kpi-card savings">
-                    <div class="kpi-icon">🎯</div>
+                    <div class="kpi-icon">[%]</div>
                     <div class="kpi-content">
                         <div class="kpi-label">Tasso Risparmio</div>
                         <div class="kpi-value" id="savingsRate">0%</div>
@@ -92,22 +70,22 @@
             <div class="dashboard-charts">
                 <div class="chart-row">
                     <div class="chart-container">
-                        <h3>�💰 Entrate vs 💸 Spese</h3>
+                        <h3>Entrate vs Spese</h3>
                         <canvas id="balanceChart"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>👥 Bilancio per Utente</h3>
+                        <h3>Bilancio per Utente</h3>
                         <canvas id="userBalanceChart"></canvas>
                     </div>
                 </div>
                 
                 <div class="chart-row">
                     <div class="chart-container">
-                        <h3>📈 Trend Mensile</h3>
+                        <h3>Trend Mensile</h3>
                         <canvas id="trendChart"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>🏷️ Top Categorie Spese</h3>
+                        <h3>Top Categorie Spese</h3>
                         <canvas id="topCategoriesChart"></canvas>
                     </div>
                 </div>
@@ -218,26 +196,20 @@
                 <button id="loadReportBtn">Carica Report</button>
             </div>
             
-            <!-- Grafici -->
-            <div class="charts-container">
-                <div class="chart-wrapper">
-                    <h3>Spese per Categoria</h3>
-                    <canvas id="categoryChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
-                    <h3>Spese per Utente</h3>
-                    <canvas id="userChart"></canvas>
-                </div>
+            <div class="report-summary" id="reportSummary">
+                <!-- Report mensile sarà caricato qui -->
             </div>
         </div>
 
-        <!-- Lista spese/entrate recenti -->
+        <!-- Sezione transazioni -->
         <div class="card">
             <div class="section-header">
-                <h2 id="recentTitle">Spese Recenti</h2>
-                <div class="refresh-controls">
-                    <span id="lastRefresh" class="last-refresh">Ultimo aggiornamento: caricamento...</span>
-                    <button id="refreshBtn" class="refresh-btn" title="Aggiorna ora">🔄</button>
+                <h2 id="recentTitle">Dashboard Famiglia</h2>
+                <div class="header-controls">
+                    <div class="last-update">
+                        Ultimo aggiornamento: <span id="lastUpdate">--:--</span>
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn" title="Aggiorna ora">[REFRESH]</button>
                 </div>
             </div>
             <div class="expenses-list" id="itemsList">
