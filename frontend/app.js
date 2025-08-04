@@ -37,6 +37,10 @@ let incomes = [];
 let currentTab = 'dashboard'; // 'dashboard', 'expenses' o 'incomes'
 let categoryChart = null;
 let userChart = null;
+let balanceChart = null;
+let userBalanceChart = null;
+let trendChart = null;
+let topCategoriesChart = null;
 
 // Inizializzazione
 document.addEventListener('DOMContentLoaded', async () => {
@@ -768,6 +772,12 @@ function filterByPeriod(transactions, period) {
 
 // Carica i grafici della dashboard
 function loadDashboardCharts() {
+    // Distruggi grafici esistenti per evitare conflitti
+    if (balanceChart) balanceChart.destroy();
+    if (userBalanceChart) userBalanceChart.destroy();
+    if (trendChart) trendChart.destroy();
+    if (topCategoriesChart) topCategoriesChart.destroy();
+    
     loadBalanceChart();
     loadUserBalanceChart();
     loadTrendChart();
@@ -776,16 +786,23 @@ function loadDashboardCharts() {
 
 // Grafico Entrate vs Spese
 function loadBalanceChart() {
-    const ctx = document.getElementById('balanceChart').getContext('2d');
-    
-    const currentPeriod = getPeriodFromSelector();
-    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
-    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
-    
-    const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-    
-    new Chart(ctx, {
+    try {
+        const canvasElement = document.getElementById('balanceChart');
+        if (!canvasElement) {
+            console.error('Canvas balanceChart non trovato');
+            return;
+        }
+        
+        const ctx = canvasElement.getContext('2d');
+        
+        const currentPeriod = getPeriodFromSelector();
+        const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+        const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+        
+        const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+        
+        balanceChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Entrate', 'Spese'],
@@ -804,6 +821,9 @@ function loadBalanceChart() {
             }
         }
     });
+    } catch (error) {
+        console.error('Errore nel caricamento grafico bilancio:', error);
+    }
 }
 
 // Grafico bilancio per utente
@@ -830,7 +850,7 @@ function loadUserBalanceChart() {
     const labels = Object.keys(userBalances);
     const data = Object.values(userBalances);
     
-    new Chart(ctx, {
+    userBalanceChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -884,7 +904,7 @@ function loadTrendChart() {
         incomeData.push(monthIncomes);
     }
     
-    new Chart(ctx, {
+    trendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: months,
@@ -938,7 +958,7 @@ function loadTopCategoriesChart() {
     const labels = sortedCategories.map(([cat, ]) => cat);
     const data = sortedCategories.map(([, amount]) => amount);
     
-    new Chart(ctx, {
+    topCategoriesChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
