@@ -1,6 +1,27 @@
-// Configurazione API
-const API_BASE = 'http://localhost:8082';
+// Configurazione API - Auto-detect per localhost, rete locale o accesso esterno
+let API_BASE;
+
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Se siamo in localhost, usa porta 8082
+    API_BASE = 'http://localhost:8082';
+    console.log('Frontend - Localhost mode:', API_BASE);
+} else if (window.location.hostname.startsWith('192.168.') || 
+           window.location.hostname.startsWith('10.') || 
+           window.location.hostname.startsWith('172.')) {
+    // Se siamo su rete locale, usa IP con porta 8082
+    API_BASE = `http://${window.location.hostname}:8082`;
+    console.log('Frontend - LAN mode:', API_BASE);
+} else {
+    // Accesso esterno tramite port forwarding - forza HTTP per compatibilità
+    API_BASE = `http://${window.location.hostname}:8082`;
+    console.log('Frontend - External access mode (forced HTTP):', API_BASE);
+}
+
 const API_TOKEN = 'family_secret_token';
+
+console.log('Frontend - API Base URL:', API_BASE);
+console.log('Frontend - Current hostname:', window.location.hostname);
+console.log('Frontend - Current protocol:', window.location.protocol);
 
 // Headers per le richieste API
 const headers = {
