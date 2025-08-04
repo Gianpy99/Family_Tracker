@@ -52,6 +52,10 @@ function setupEventListeners() {
     document.getElementById('loadExpenses').addEventListener('click', loadExpenses);
     document.getElementById('expenseSearch').addEventListener('input', filterExpenses);
     
+    // Incomes
+    document.getElementById('loadIncomes').addEventListener('click', loadIncomes);
+    document.getElementById('incomeSearch').addEventListener('input', filterIncomes);
+    
     // Users
     document.getElementById('addUser').addEventListener('click', addUser);
     document.getElementById('loadUsers').addEventListener('click', loadUsers);
@@ -65,10 +69,18 @@ function setupEventListeners() {
     document.getElementById('cancelEdit').addEventListener('click', closeModal);
     document.getElementById('editExpenseForm').addEventListener('submit', saveExpenseEdit);
     
+    // Income Modal
+    document.querySelector('.close-income').addEventListener('click', closeIncomeModal);
+    document.getElementById('cancelIncomeEdit').addEventListener('click', closeIncomeModal);
+    document.getElementById('editIncomeForm').addEventListener('submit', saveIncomeEdit);
+    
     // Click outside modal
     window.addEventListener('click', (e) => {
         const modal = document.getElementById('editExpenseModal');
         if (e.target === modal) closeModal();
+        
+        const incomeModal = document.getElementById('editIncomeModal');
+        if (e.target === incomeModal) closeIncomeModal();
     });
 }
 
@@ -93,6 +105,9 @@ function switchSection(sectionName) {
             break;
         case 'expenses':
             loadExpenses();
+            break;
+        case 'incomes':
+            loadIncomes();
             break;
         case 'users':
             loadUsers();
@@ -300,6 +315,147 @@ async function deleteExpense(expenseId) {
         console.error('Errore nell\'eliminazione spesa:', error);
         showToast('Errore nell\'eliminazione spesa', 'error');
     }
+}
+
+// Incomes Management
+let incomes = [];
+
+async function loadIncomes() {
+    try {
+        const response = await fetch(`${API_BASE}/incomes`, { headers });
+        incomes = await response.json();
+        
+        displayIncomes(incomes);
+        console.log(`Caricate ${incomes.length} entrate`);
+    } catch (error) {
+        console.error('Errore nel caricamento entrate:', error);
+        showToast('Errore nel caricamento entrate', 'error');
+    }
+}
+
+function displayIncomes(incomesToShow) {
+    const tbody = document.getElementById('incomesTableBody');
+    
+    if (incomesToShow.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nessuna entrata trovata</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = incomesToShow.map(income => `
+        <tr>
+            <td>${income.id}</td>
+            <td>${formatDate(income.date)}</td>
+            <td>${income.category}</td>
+            <td>${income.amount.toFixed(2)}</td>
+            <td>${income.currency}</td>
+            <td>${income.user}</td>
+            <td>
+                <button class="btn btn-warning btn-small" onclick="editIncome(${income.id})">✏️ Modifica</button>
+                <button class="btn btn-danger btn-small" onclick="deleteIncome(${income.id})">🗑️ Elimina</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterIncomes() {
+    const searchTerm = document.getElementById('incomeSearch').value.toLowerCase();
+    
+    const filtered = incomes.filter(income => 
+        income.category.toLowerCase().includes(searchTerm) ||
+        income.user.toLowerCase().includes(searchTerm) ||
+        income.amount.toString().includes(searchTerm) ||
+        income.date.includes(searchTerm)
+    );
+    
+    displayIncomes(filtered);
+}
+
+// Edit income
+function editIncome(incomeId) {
+    const income = incomes.find(i => i.id === incomeId);
+    if (!income) return;
+    
+    // Populate form
+    document.getElementById('editIncomeId').value = income.id;
+    document.getElementById('editIncomeDate').value = income.date;
+    document.getElementById('editIncomeAmount').value = income.amount;
+    document.getElementById('editIncomeCurrency').value = income.currency;
+    
+    // Populate categories
+    const categorySelect = document.getElementById('editIncomeCategory');
+    categorySelect.innerHTML = categories.map(cat => 
+        `<option value="${cat.name}" ${cat.name === income.category ? 'selected' : ''}>${cat.name}</option>`
+    ).join('');
+    
+    // Populate users
+    const userSelect = document.getElementById('editIncomeUser');
+    userSelect.innerHTML = users.map(user => 
+        `<option value="${user}" ${user === income.user ? 'selected' : ''}>${user}</option>`
+    ).join('');
+    
+    // Show modal
+    document.getElementById('editIncomeModal').style.display = 'block';
+}
+
+async function saveIncomeEdit(event) {
+    event.preventDefault();
+    
+    const incomeId = document.getElementById('editIncomeId').value;
+    const incomeData = {
+        id: parseInt(incomeId),
+        date: document.getElementById('editIncomeDate').value,
+        category: document.getElementById('editIncomeCategory').value,
+        amount: parseFloat(document.getElementById('editIncomeAmount').value),
+        currency: document.getElementById('editIncomeCurrency').value,
+        user: document.getElementById('editIncomeUser').value
+    };
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/incomes/${incomeId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(incomeData)
+        });
+        
+        if (response.ok) {
+            showToast('Entrata aggiornata con successo', 'success');
+            closeIncomeModal();
+            await loadIncomes();
+        } else {
+            const error = await response.json();
+            showToast(`Errore: ${error.detail}`, 'error');
+        }
+    } catch (error) {
+        console.error('Errore nell\'aggiornamento entrata:', error);
+        showToast('Errore nell\'aggiornamento entrata', 'error');
+    }
+}
+
+// Delete income
+async function deleteIncome(incomeId) {
+    if (!confirm('Sei sicuro di voler eliminare questa entrata?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/incomes/${incomeId}`, {
+            method: 'DELETE',
+            headers
+        });
+        
+        if (response.ok) {
+            showToast('Entrata eliminata con successo', 'success');
+            await loadIncomes();
+        } else {
+            const error = await response.json();
+            showToast(`Errore: ${error.detail}`, 'error');
+        }
+    } catch (error) {
+        console.error('Errore nell\'eliminazione entrata:', error);
+        showToast('Errore nell\'eliminazione entrata', 'error');
+    }
+}
+
+function closeIncomeModal() {
+    document.getElementById('editIncomeModal').style.display = 'none';
 }
 
 // Users Management

@@ -424,6 +424,45 @@ def delete_expense(expense_id: int):
         conn.close()
         raise HTTPException(status_code=500, detail=str(e))
 
+# Gestione entrate admin - Modifica
+@app.put("/admin/incomes/{income_id}", dependencies=[Depends(check_auth)])  
+def update_income_admin(income_id: int, income: UpdateIncome):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("""UPDATE incomes 
+                     SET date=?, category=?, amount=?, currency=?, user=? 
+                     WHERE id=?""", 
+                  (income.date, income.category, income.amount, income.currency, income.user, income_id))
+        
+        if c.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Entrata non trovata")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Entrata {income_id} modificata"}
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Gestione entrate admin - Elimina
+@app.delete("/admin/incomes/{income_id}", dependencies=[Depends(check_auth)])
+def delete_income_admin(income_id: int):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM incomes WHERE id=?", (income_id,))
+        
+        if c.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Entrata non trovata")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Entrata {income_id} eliminata"}
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Gestione utenti - Aggiungi
 @app.post("/admin/users", dependencies=[Depends(check_auth)])
 def add_user(user: User):

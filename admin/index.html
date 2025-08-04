@@ -13,6 +13,7 @@
             <div class="admin-nav">
                 <button class="nav-btn active" data-section="dashboard">Dashboard</button>
                 <button class="nav-btn" data-section="expenses">Gestisci Spese</button>
+                <button class="nav-btn" data-section="incomes">Gestisci Entrate</button>
                 <button class="nav-btn" data-section="users">Gestisci Utenti</button>
                 <button class="nav-btn" data-section="database">Database</button>
             </div>
@@ -52,6 +53,35 @@
                         </thead>
                         <tbody id="expensesTableBody">
                             <!-- Spese verranno caricate dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Incomes Management Section -->
+        <section id="incomes" class="admin-section">
+            <div class="card">
+                <h2>💰 Gestione Entrate</h2>
+                <div class="table-controls">
+                    <input type="text" id="incomeSearch" placeholder="Cerca entrate..." class="search-input">
+                    <button id="loadIncomes" class="btn btn-primary">📋 Carica Entrate</button>
+                </div>
+                <div class="table-container">
+                    <table id="incomesTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Importo</th>
+                                <th>Valuta</th>
+                                <th>Utente</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incomesTableBody">
+                            <!-- Entrate verranno caricate dinamicamente -->
                         </tbody>
                     </table>
                 </div>
@@ -144,6 +174,57 @@
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" id="cancelEdit">Annulla</button>
+                        <button type="submit" class="btn btn-primary">💾 Salva Modifiche</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per modificare entrate -->
+    <div id="editIncomeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Modifica Entrata</h3>
+                <span class="close-income">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editIncomeForm">
+                    <input type="hidden" id="editIncomeId">
+                    <div class="form-group">
+                        <label for="editIncomeDate">Data:</label>
+                        <input type="date" id="editIncomeDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIncomeCategory">Categoria:</label>
+                        <select id="editIncomeCategory" required>
+                            <option value="Stipendio">Stipendio</option>
+                            <option value="Bonus">Bonus</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Investimenti">Investimenti</option>
+                            <option value="Regalo">Regalo</option>
+                            <option value="Vendita">Vendita</option>
+                            <option value="Altro">Altro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIncomeAmount">Importo:</label>
+                        <input type="number" id="editIncomeAmount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIncomeCurrency">Valuta:</label>
+                        <select id="editIncomeCurrency" required>
+                            <option value="EUR">EUR</option>
+                            <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIncomeUser">Utente:</label>
+                        <select id="editIncomeUser" required></select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelIncomeEdit">Annulla</button>
                         <button type="submit" class="btn btn-primary">💾 Salva Modifiche</button>
                     </div>
                 </form>
