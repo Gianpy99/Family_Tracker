@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
+import os
 from datetime import datetime
 
 # Configurazione
 SHARED_SECRET = "family_secret_token"
-DB_PATH = "./expenses.db"
+DB_PATH = os.getenv("DB_PATH", "./expenses.db")
 
 # Modelli
 class Expense(BaseModel):
@@ -64,6 +65,19 @@ def startup():
         name TEXT UNIQUE
     )
     """)
+    
+    # Aggiungi categorie di default se non esistono
+    default_categories = [
+        "Spesa", "Benzina", "Ristorante", "Bollette", "Casa", 
+        "Salute", "Sport", "Svago", "Abbigliamento", "Trasporti"
+    ]
+    
+    for category in default_categories:
+        try:
+            c.execute("INSERT OR IGNORE INTO categories (name) VALUES (?)", (category,))
+        except:
+            pass
+    
     conn.commit()
     conn.close()
 

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Family Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f0f0f0;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Family Expense Tracker</h1>
+    
+    <div class="test-box">
+        <h2>✅ Stato del Server Frontend</h2>
+        <p class="success">Il server frontend funziona! Stai vedendo questa pagina.</p>
+    </div>
+
+    <div class="test-box">
+        <h2>🔗 Test Connessione Backend</h2>
+        <p id="backend-status" class="info">Testando connessione...</p>
+        <button onclick="testBackend()">🔄 Riprova</button>
+    </div>
+
+    <div class="test-box">
+        <h2>📋 Log Dettagliati</h2>
+        <div id="logs" style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="test-box">
+        <p><a href="index.html">← Torna alla Dashboard Principale</a></p>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span class="${type}">${message}</span>`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function testBackend() {
+            const statusEl = document.getElementById('backend-status');
+            statusEl.textContent = '🔄 Testando...';
+            statusEl.className = 'info';
+            
+            log('🚀 Inizio test backend...', 'info');
+            log('🔗 URL Backend: http://localhost:8082', 'info');
+            
+            try {
+                log('📡 Tentativo connessione a /categories...', 'info');
+                
+                const response = await fetch('http://localhost:8082/categories', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Token': 'family_secret_token'
+                    }
+                });
+                
+                log(`📈 Risposta ricevuta: ${response.status} ${response.statusText}`, 'info');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ Dati ricevuti: ${data.length} categorie`, 'success');
+                log(`📊 Categorie: ${data.map(c => c.name).join(', ')}`, 'success');
+                
+                statusEl.textContent = '✅ Backend connesso e funzionante!';
+                statusEl.className = 'success';
+                
+            } catch (error) {
+                log(`❌ Errore: ${error.message}`, 'error');
+                
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    log('🔍 Possibili cause:', 'error');
+                    log('   - Backend non avviato', 'error');
+                    log('   - CORS non configurato', 'error');
+                    log('   - Porta 8082 non in ascolto', 'error');
+                } else if (error.message.includes('CORS')) {
+                    log('🔍 Problema CORS rilevato', 'error');
+                    log('   - Controllare configurazione CORS del backend', 'error');
+                }
+                
+                statusEl.textContent = '❌ Backend non raggiungibile';
+                statusEl.className = 'error';
+            }
+        }
+
+        // Test automatico all'avvio
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Pagina di test caricata', 'success');
+            testBackend();
+        });
+    </script>
+</body>
+</html>

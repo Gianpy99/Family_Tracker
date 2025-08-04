@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Expense Tracker - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Family Expense Tracker</h1>
+        
+        <!-- Sezione aggiunta spesa -->
+        <div class="card">
+            <h2>Aggiungi Spesa</h2>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="date">Data:</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoria:</label>
+                    <select id="category" required>
+                        <option value="">Seleziona categoria...</option>
+                    </select>
+                    <button type="button" id="addCategoryBtn">+</button>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Importo:</label>
+                    <input type="number" id="amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="currency">Valuta:</label>
+                    <select id="currency" required>
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user">Utente:</label>
+                    <select id="user" required>
+                        <option value="">Seleziona utente...</option>
+                    </select>
+                </div>
+                <button type="submit">Aggiungi Spesa</button>
+            </form>
+        </div>
+
+        <!-- Sezione filtri e report -->
+        <div class="card">
+            <h2>Report Mensile</h2>
+            <div class="filters">
+                <label for="reportYear">Anno:</label>
+                <input type="number" id="reportYear" value="2025" min="2020" max="2030">
+                <label for="reportMonth">Mese:</label>
+                <select id="reportMonth">
+                    <option value="1">Gennaio</option>
+                    <option value="2">Febbraio</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Aprile</option>
+                    <option value="5">Maggio</option>
+                    <option value="6">Giugno</option>
+                    <option value="7">Luglio</option>
+                    <option value="8" selected>Agosto</option>
+                    <option value="9">Settembre</option>
+                    <option value="10">Ottobre</option>
+                    <option value="11">Novembre</option>
+                    <option value="12">Dicembre</option>
+                </select>
+                <button id="loadReportBtn">Carica Report</button>
+            </div>
+            
+            <!-- Grafici -->
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h3>Spese per Categoria</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h3>Spese per Utente</h3>
+                    <canvas id="userChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista spese recenti -->
+        <div class="card">
+            <h2>Spese Recenti</h2>
+            <div class="expenses-list" id="expensesList">
+                <!-- Le spese verranno caricate dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per aggiungere categoria -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Aggiungi Categoria</h3>
+            <input type="text" id="newCategoryName" placeholder="Nome categoria">
+            <button id="saveCategoryBtn">Salva</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

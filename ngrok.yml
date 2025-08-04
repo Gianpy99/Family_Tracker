@@ -1,0 +1,11 @@
+version: "2"
+authtoken: YOUR_NGROK_TOKEN_HERE
+tunnels:
+  backend:
+    addr: 8082
+    proto: http
+    # bind_tls: true  # Force HTTPS
+  frontend:
+    addr: 8090
+    proto: http
+    # bind_tls: true  # Force HTTPS

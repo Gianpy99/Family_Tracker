@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tracker Mobile</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>💰 Family Tracker</h1>
+            <div class="header-controls">
+                <div class="sync-status" id="syncStatus">
+                    <span class="sync-icon">🔄</span>
+                    <span id="syncText">Sincronizzando...</span>
+                </div>
+                <button id="manualSyncBtn" class="sync-btn" onclick="manualSync()" style="display: none;">
+                    🔄 Sync
+                </button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Form principale -->
+            <div class="expense-form">
+                <h2>Aggiungi Spesa</h2>
+                
+                <form id="mobileExpenseForm">
+                    <div class="input-group">
+                        <label for="mobileDate">📅 Data</label>
+                        <input type="date" id="mobileDate" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="mobileCategory">🏷️ Categoria</label>
+                        <select id="mobileCategory" required>
+                            <option value="">Seleziona...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="mobileAmount">💵 Importo</label>
+                        <input type="number" id="mobileAmount" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="mobileCurrency">💱 Valuta</label>
+                        <select id="mobileCurrency" required>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="USD">USD ($)</option>
+                            <option value="GBP">GBP (£)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="mobileUser">👤 Utente</label>
+                        <select id="mobileUser" required>
+                            <option value="">Chi ha speso?</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        ✅ Aggiungi Spesa
+                    </button>
+                </form>
+            </div>
+
+            <!-- Lista spese recenti -->
+            <div class="recent-expenses">
+                <h3>📋 Spese Recenti</h3>
+                <div id="mobileExpensesList" class="expenses-list">
+                    <!-- Popolato dinamicamente -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Messaggi toast -->
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="mobile-app.js"></script>
+</body>
+</html>
