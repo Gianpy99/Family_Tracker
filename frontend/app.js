@@ -303,14 +303,18 @@ async function manualRefresh() {
 
 // Aggiorna timestamp ultimo aggiornamento
 function updateLastRefreshTime() {
-    const lastRefresh = document.getElementById('lastRefresh');
+    const lastRefresh = document.getElementById('lastUpdate');
+    if (!lastRefresh) {
+        console.warn('⚠️ Elemento lastUpdate non trovato');
+        return;
+    }
     const now = new Date();
     const timeString = now.toLocaleTimeString('it-IT', { 
         hour: '2-digit', 
         minute: '2-digit', 
         second: '2-digit' 
     });
-    lastRefresh.textContent = `Ultimo aggiornamento: ${timeString}`;
+    lastRefresh.textContent = timeString;
 }
 
 // Gestione submit spesa
