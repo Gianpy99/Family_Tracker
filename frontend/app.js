@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Nasconde il messaggio di caricamento
     hideLoadingMessage();
+    
+    // Avvia refresh automatico ogni 30 secondi
+    setupAutoRefresh();
 });
 
 // Carica dati iniziali (categorie e utenti)
@@ -136,6 +139,60 @@ function setupEventListeners() {
     
     // Report
     document.getElementById('loadReportBtn').addEventListener('click', loadMonthlyReport);
+    
+    // Refresh manuale
+    document.getElementById('refreshBtn').addEventListener('click', manualRefresh);
+}
+
+// Setup refresh automatico
+function setupAutoRefresh() {
+    console.log('🔄 Configurazione refresh automatico ogni 30 secondi...');
+    
+    setInterval(async () => {
+        try {
+            console.log('🔄 Refresh automatico in corso...');
+            await loadExpenses();
+            updateLastRefreshTime();
+            console.log('✅ Refresh automatico completato');
+        } catch (error) {
+            console.error('❌ Errore durante refresh automatico:', error);
+        }
+    }, 30000); // 30 secondi
+}
+
+// Refresh manuale
+async function manualRefresh() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    
+    try {
+        // Disabilita il pulsante e mostra loading
+        refreshBtn.disabled = true;
+        refreshBtn.style.animation = 'spin 1s linear infinite';
+        
+        console.log('🔄 Refresh manuale richiesto...');
+        await loadExpenses();
+        updateLastRefreshTime();
+        console.log('✅ Refresh manuale completato');
+        
+    } catch (error) {
+        console.error('❌ Errore durante refresh manuale:', error);
+    } finally {
+        // Riabilita il pulsante
+        refreshBtn.disabled = false;
+        refreshBtn.style.animation = '';
+    }
+}
+
+// Aggiorna timestamp ultimo aggiornamento
+function updateLastRefreshTime() {
+    const lastRefresh = document.getElementById('lastRefresh');
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('it-IT', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    });
+    lastRefresh.textContent = `Ultimo aggiornamento: ${timeString}`;
 }
 
 // Gestione submit spesa
@@ -185,6 +242,7 @@ async function loadExpenses() {
         expenses = await response.json();
         console.log('✅ Spese caricate:', expenses.length, 'elementi');
         displayExpenses();
+        updateLastRefreshTime();
     } catch (error) {
         console.error('❌ Errore nel caricamento spese:', error);
         console.log('📝 Usando lista spese vuota');

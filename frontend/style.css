@@ -38,6 +38,59 @@ h1 {
     padding-bottom: 10px;
 }
 
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    margin-bottom: 0;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.refresh-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.last-refresh {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.refresh-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: #2980b9;
+    transform: rotate(180deg);
+}
+
+.refresh-btn:active {
+    transform: rotate(360deg);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .form-group {
     margin-bottom: 15px;
     display: flex;

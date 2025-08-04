@@ -87,7 +87,13 @@
 
         <!-- Lista spese recenti -->
         <div class="card">
-            <h2>Spese Recenti</h2>
+            <div class="section-header">
+                <h2>Spese Recenti</h2>
+                <div class="refresh-controls">
+                    <span id="lastRefresh" class="last-refresh">Ultimo aggiornamento: caricamento...</span>
+                    <button id="refreshBtn" class="refresh-btn" title="Aggiorna ora">🔄</button>
+                </div>
+            </div>
             <div class="expenses-list" id="expensesList">
                 <!-- Le spese verranno caricate dinamicamente -->
             </div>
