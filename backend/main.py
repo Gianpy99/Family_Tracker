@@ -183,6 +183,51 @@ def delete_expense(expense_id: int):
     conn.close()
     return {"status": "ok"}
 
+# ========== API ENTRATE ==========
+
+@app.post("/incomes", dependencies=[Depends(check_auth)])
+def add_income(income: Income):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO incomes (date, category, amount, currency, user) VALUES (?, ?, ?, ?, ?)",
+        (income.date, income.category, income.amount, income.currency, income.user)
+    )
+    conn.commit()
+    income_id = c.lastrowid
+    conn.close()
+    return {"status": "ok", "id": income_id}
+
+@app.get("/incomes", response_model=List[Income], dependencies=[Depends(check_auth)])
+def list_incomes():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM incomes ORDER BY date DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [Income(**dict(row)) for row in rows]
+
+@app.put("/incomes/{income_id}", dependencies=[Depends(check_auth)])
+def update_income(income_id: int, income: Income):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE incomes SET date=?, category=?, amount=?, currency=?, user=? WHERE id=?",
+        (income.date, income.category, income.amount, income.currency, income.user, income_id)
+    )
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+@app.delete("/incomes/{income_id}", dependencies=[Depends(check_auth)])
+def delete_income(income_id: int):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM incomes WHERE id = ?", (income_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
 # Report mensile per categoria, utente, valuta
 @app.get("/reports/monthly", dependencies=[Depends(check_auth)])
 def monthly_report(year: int, month: int):
@@ -273,6 +318,7 @@ def reset_database():
         
         # Elimina tutti i dati
         c.execute("DELETE FROM expenses")
+        c.execute("DELETE FROM incomes")
         c.execute("DELETE FROM categories")
         c.execute("DELETE FROM users")
         
@@ -413,6 +459,10 @@ def get_database_stats():
         c.execute("SELECT COUNT(*) FROM expenses")
         expense_count = c.fetchone()[0]
         
+        # Conta entrate
+        c.execute("SELECT COUNT(*) FROM incomes")
+        income_count = c.fetchone()[0]
+        
         # Conta categorie
         c.execute("SELECT COUNT(*) FROM categories")
         category_count = c.fetchone()[0]
@@ -423,20 +473,31 @@ def get_database_stats():
         
         # Totale speso per valuta
         c.execute("SELECT currency, SUM(amount) FROM expenses GROUP BY currency")
-        currency_totals = {row[0]: row[1] for row in c.fetchall()}
+        expense_totals = {row[0]: row[1] for row in c.fetchall()}
+        
+        # Totale entrate per valuta
+        c.execute("SELECT currency, SUM(amount) FROM incomes GROUP BY currency")
+        income_totals = {row[0]: row[1] for row in c.fetchall()}
         
         # Spese per utente
         c.execute("SELECT user, COUNT(*), SUM(amount) FROM expenses GROUP BY user")
-        user_stats = [{"user": row[0], "count": row[1], "total": row[2]} for row in c.fetchall()]
+        expense_user_stats = [{"user": row[0], "count": row[1], "total": row[2]} for row in c.fetchall()]
+        
+        # Entrate per utente
+        c.execute("SELECT user, COUNT(*), SUM(amount) FROM incomes GROUP BY user")
+        income_user_stats = [{"user": row[0], "count": row[1], "total": row[2]} for row in c.fetchall()]
         
         conn.close()
         
         return {
             "expense_count": expense_count,
+            "income_count": income_count,
             "category_count": category_count,
             "user_count": user_count,
-            "currency_totals": currency_totals,
-            "user_stats": user_stats
+            "expense_totals": expense_totals,
+            "income_totals": income_totals,
+            "expense_user_stats": expense_user_stats,
+            "income_user_stats": income_user_stats
         }
     except Exception as e:
         conn.close()

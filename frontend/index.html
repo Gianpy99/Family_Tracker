@@ -11,8 +11,14 @@
     <div class="container">
         <h1>Family Expense Tracker</h1>
         
+        <!-- Navigazione tab -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('expenses')">💸 Spese</button>
+            <button class="tab-btn" onclick="switchTab('incomes')">💰 Entrate</button>
+        </div>
+        
         <!-- Sezione aggiunta spesa -->
-        <div class="card">
+        <div class="card" id="expenseSection">
             <h2>Aggiungi Spesa</h2>
             <form id="expenseForm">
                 <div class="form-group">
@@ -45,6 +51,49 @@
                     </select>
                 </div>
                 <button type="submit">Aggiungi Spesa</button>
+            </form>
+        </div>
+
+        <!-- Sezione aggiunta entrata -->
+        <div class="card" id="incomeSection" style="display: none;">
+            <h2>Aggiungi Entrata</h2>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label for="incomeDate">Data:</label>
+                    <input type="date" id="incomeDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeCategory">Categoria:</label>
+                    <select id="incomeCategory" required>
+                        <option value="">Seleziona categoria...</option>
+                        <option value="Stipendio">Stipendio</option>
+                        <option value="Bonus">Bonus</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Investimenti">Investimenti</option>
+                        <option value="Regalo">Regalo</option>
+                        <option value="Vendita">Vendita</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="incomeAmount">Importo:</label>
+                    <input type="number" id="incomeAmount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeCurrency">Valuta:</label>
+                    <select id="incomeCurrency" required>
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="incomeUser">Utente:</label>
+                    <select id="incomeUser" required>
+                        <option value="">Seleziona utente...</option>
+                    </select>
+                </div>
+                <button type="submit">Aggiungi Entrata</button>
             </form>
         </div>
 
@@ -85,17 +134,17 @@
             </div>
         </div>
 
-        <!-- Lista spese recenti -->
+        <!-- Lista spese/entrate recenti -->
         <div class="card">
             <div class="section-header">
-                <h2>Spese Recenti</h2>
+                <h2 id="recentTitle">Spese Recenti</h2>
                 <div class="refresh-controls">
                     <span id="lastRefresh" class="last-refresh">Ultimo aggiornamento: caricamento...</span>
                     <button id="refreshBtn" class="refresh-btn" title="Aggiorna ora">🔄</button>
                 </div>
             </div>
-            <div class="expenses-list" id="expensesList">
-                <!-- Le spese verranno caricate dinamicamente -->
+            <div class="expenses-list" id="itemsList">
+                <!-- Le transazioni verranno caricate dinamicamente -->
             </div>
         </div>
     </div>

@@ -23,6 +23,38 @@ h1 {
     font-size: 2.5em;
 }
 
+/* Navigazione tab */
+.tab-navigation {
+    display: flex;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #7f8c8d;
+}
+
+.tab-btn.active {
+    background: #3498db;
+    color: white;
+    font-weight: bold;
+}
+
+.tab-btn:hover:not(.active) {
+    background: #e9ecef;
+    color: #2c3e50;
+}
+
 .card {
     background: white;
     border-radius: 8px;
@@ -216,6 +248,12 @@ button:hover {
     font-size: 1.2em;
     font-weight: bold;
     color: #e74c3c;
+}
+
+.income-amount {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #27ae60;
 }
 
 .expense-actions {

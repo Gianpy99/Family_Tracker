@@ -33,6 +33,8 @@ const headers = {
 let categories = [];
 let users = [];
 let expenses = [];
+let incomes = [];
+let currentTab = 'expenses'; // 'expenses' o 'incomes'
 let categoryChart = null;
 let userChart = null;
 
@@ -47,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadInitialData();
     setupEventListeners();
     setTodayDate();
-    await loadExpenses();
+    await loadItems(); // Cambiato da loadExpenses a loadItems
     
     // Nasconde il messaggio di caricamento
     hideLoadingMessage();
@@ -144,12 +146,43 @@ function populateUserSelect() {
 function setTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
+    document.getElementById('incomeDate').value = today;
+}
+
+// Gestione navigazione tab
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Aggiorna pulsanti tab
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Mostra/nascondi sezioni
+    const expenseSection = document.getElementById('expenseSection');
+    const incomeSection = document.getElementById('incomeSection');
+    const recentTitle = document.getElementById('recentTitle');
+    
+    if (tabName === 'expenses') {
+        expenseSection.style.display = 'block';
+        incomeSection.style.display = 'none';
+        recentTitle.textContent = 'Spese Recenti';
+    } else {
+        expenseSection.style.display = 'none';
+        incomeSection.style.display = 'block';
+        recentTitle.textContent = 'Entrate Recenti';
+    }
+    
+    // Ricarica la lista appropriata
+    loadItems();
 }
 
 // Setup event listeners
 function setupEventListeners() {
     // Form spesa
     document.getElementById('expenseForm').addEventListener('submit', handleExpenseSubmit);
+    
+    // Form entrata
+    document.getElementById('incomeForm').addEventListener('submit', handleIncomeSubmit);
     
     // Bottone aggiungi categoria
     document.getElementById('addCategoryBtn').addEventListener('click', showCategoryModal);
@@ -172,7 +205,7 @@ function setupAutoRefresh() {
     setInterval(async () => {
         try {
             console.log('🔄 Refresh automatico in corso...');
-            await loadExpenses();
+            await loadItems();
             updateLastRefreshTime();
             console.log('✅ Refresh automatico completato');
         } catch (error) {
@@ -191,7 +224,7 @@ async function manualRefresh() {
         refreshBtn.style.animation = 'spin 1s linear infinite';
         
         console.log('🔄 Refresh manuale richiesto...');
-        await loadExpenses();
+        await loadItems();
         updateLastRefreshTime();
         console.log('✅ Refresh manuale completato');
         
@@ -240,7 +273,7 @@ async function handleExpenseSubmit(event) {
             showSuccess('Spesa aggiunta con successo!');
             event.target.reset();
             setTodayDate();
-            await loadExpenses();
+            await loadItems(); // Cambiato da loadExpenses
         } else {
             throw new Error('Errore nel salvataggio');
         }
@@ -250,61 +283,112 @@ async function handleExpenseSubmit(event) {
     }
 }
 
-// Carica lista spese
-async function loadExpenses() {
+// Gestione submit entrata
+async function handleIncomeSubmit(event) {
+    event.preventDefault();
+    
+    const income = {
+        date: document.getElementById('incomeDate').value,
+        category: document.getElementById('incomeCategory').value,
+        amount: parseFloat(document.getElementById('incomeAmount').value),
+        currency: document.getElementById('incomeCurrency').value,
+        user: document.getElementById('incomeUser').value
+    };
+
     try {
-        console.log('💰 Caricamento spese da:', `${API_BASE}/expenses`);
-        const response = await fetch(`${API_BASE}/expenses`, { headers });
+        const response = await fetch(`${API_BASE}/incomes`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(income)
+        });
+
+        if (response.ok) {
+            showSuccess('Entrata aggiunta con successo!');
+            event.target.reset();
+            setTodayDate();
+            await loadItems();
+        } else {
+            throw new Error('Errore nel salvataggio');
+        }
+    } catch (error) {
+        console.error('Errore nel salvataggio entrata:', error);
+        showError('Errore nel salvataggio dell\'entrata');
+    }
+}
+
+// Carica lista spese o entrate
+async function loadItems() {
+    try {
+        const endpoint = currentTab === 'expenses' ? '/expenses' : '/incomes';
+        console.log(`💰 Caricamento ${currentTab} da:`, `${API_BASE}${endpoint}`);
+        const response = await fetch(`${API_BASE}${endpoint}`, { headers });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        expenses = await response.json();
-        console.log('✅ Spese caricate:', expenses.length, 'elementi');
-        displayExpenses();
+        const items = await response.json();
+        if (currentTab === 'expenses') {
+            expenses = items;
+        } else {
+            incomes = items;
+        }
+        console.log(`✅ ${currentTab} caricate:`, items.length, 'elementi');
+        displayItems();
         updateLastRefreshTime();
     } catch (error) {
-        console.error('❌ Errore nel caricamento spese:', error);
-        console.log('📝 Usando lista spese vuota');
+        console.error(`❌ Errore nel caricamento ${currentTab}:`, error);
+        console.log(`📝 Usando lista ${currentTab} vuota`);
         
         // Fallback con array vuoto
-        expenses = [];
-        displayExpenses();
+        if (currentTab === 'expenses') {
+            expenses = [];
+        } else {
+            incomes = [];
+        }
+        displayItems();
         
         // Non mostriamo errore qui perché potrebbe essere già stato mostrato
         console.log('ℹ️ Lista spese non disponibile - modalità offline');
     }
 }
 
-// Mostra spese nella lista
-function displayExpenses() {
-    const expensesList = document.getElementById('expensesList');
-    expensesList.innerHTML = '';
+// Mostra spese o entrate nella lista
+function displayItems() {
+    const itemsList = document.getElementById('itemsList');
+    itemsList.innerHTML = '';
 
-    if (expenses.length === 0) {
-        expensesList.innerHTML = '<p>Nessuna spesa registrata</p>';
+    const items = currentTab === 'expenses' ? expenses : incomes;
+    const itemType = currentTab === 'expenses' ? 'spesa' : 'entrata';
+
+    if (items.length === 0) {
+        itemsList.innerHTML = `<p>Nessuna ${itemType} registrata</p>`;
         return;
     }
 
-    expenses.slice(0, 20).forEach(expense => {
-        const expenseItem = document.createElement('div');
-        expenseItem.className = 'expense-item';
-        expenseItem.innerHTML = `
+    items.slice(0, 20).forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'expense-item';
+        
+        const isExpense = currentTab === 'expenses';
+        const sign = isExpense ? '-' : '+';
+        const amountClass = isExpense ? 'expense-amount' : 'income-amount';
+        
+        itemElement.innerHTML = `
             <div class="expense-info">
-                <div class="expense-date">${formatDate(expense.date)}</div>
+                <div class="expense-date">${formatDate(item.date)}</div>
                 <div class="expense-details">
-                    <span class="expense-category">${expense.category}</span>
-                    <span class="expense-user">${expense.user}</span>
+                    <span class="expense-category">${item.category}</span>
+                    <span class="expense-user">${item.user}</span>
                 </div>
             </div>
-            <div class="expense-amount">${expense.amount.toFixed(2)} ${expense.currency}</div>
+            <div class="${amountClass}">${sign}${item.amount.toFixed(2)} ${item.currency}</div>
             <div class="expense-actions">
-                <button class="edit-btn" onclick="editExpense(${expense.id})">Modifica</button>
-                <button class="delete-btn" onclick="deleteExpense(${expense.id})">Elimina</button>
+                <button class="edit-btn" onclick="editItem(${item.id})">Modifica</button>
+                <button class="delete-btn" onclick="deleteItem(${item.id})">Elimina</button>
             </div>
         `;
-        expensesList.appendChild(expenseItem);
+        itemsList.appendChild(itemElement);
     });
 }
 
@@ -320,7 +404,7 @@ async function deleteExpense(id) {
 
         if (response.ok) {
             showSuccess('Spesa eliminata con successo!');
-            await loadExpenses();
+            await loadItems();
         } else {
             throw new Error('Errore nell\'eliminazione');
         }
