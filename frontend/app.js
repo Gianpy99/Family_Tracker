@@ -850,7 +850,7 @@ function hideLoadingMessage() {
 // Carica i dati della dashboard
 async function loadDashboard() {
     try {
-        console.log('🏠 Caricamento dashboard...');
+        console.log('🏠 Caricamento dashboard iniziato...');
         
         // Carica TUTTI i dati per la dashboard (separati dalle variabili globali)
         const [allExpenses, allIncomes] = await Promise.all([
@@ -858,13 +858,18 @@ async function loadDashboard() {
             loadAllDataForDashboard('/incomes')
         ]);
         
+        console.log('📊 Dati caricati per dashboard:', {
+            expenses: allExpenses.length,
+            incomes: allIncomes.length
+        });
+        
         // Calcola e mostra KPI con tutti i dati
         calculateKPIs(allExpenses, allIncomes);
         
         // Carica grafici con tutti i dati
         loadDashboardCharts(allExpenses, allIncomes);
         
-        console.log('✅ Dashboard caricata');
+        console.log('✅ Dashboard caricata completamente');
     } catch (error) {
         console.error('❌ Errore nel caricamento dashboard:', error);
         showError('Errore nel caricamento della dashboard');
@@ -898,23 +903,25 @@ async function loadAllIncomes() {
     }
 }
 
-// Calcola e mostra i KPI
+// Calcola e mostra i KPI - SEMPRE con dati dedicati
 function calculateKPIs(allExpenses = null, allIncomes = null) {
     const currentPeriod = getPeriodFromSelector();
     
-    // Usa i dati passati come parametri o quelli globali
-    const expensesToUse = allExpenses || expenses;
-    const incomesToUse = allIncomes || incomes;
+    // Se non ci sono dati passati, non possiamo calcolare i KPI
+    if (!allExpenses || !allIncomes) {
+        console.warn('⚠️ calculateKPIs chiamata senza dati - impossibile calcolare');
+        return;
+    }
     
-    console.log('🧮 Calcolando KPI con:', {
-        expenses: expensesToUse.length,
-        incomes: incomesToUse.length,
+    console.log('🧮 Calcolando KPI con dati dedicati:', {
+        expenses: allExpenses.length,
+        incomes: allIncomes.length,
         period: currentPeriod
     });
     
     // Filtra per periodo selezionato
-    const filteredExpenses = filterByPeriod(expensesToUse, currentPeriod);
-    const filteredIncomes = filterByPeriod(incomesToUse, currentPeriod);
+    const filteredExpenses = filterByPeriod(allExpenses, currentPeriod);
+    const filteredIncomes = filterByPeriod(allIncomes, currentPeriod);
     
     // Calcola totali
     const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -939,7 +946,7 @@ function calculateKPIs(allExpenses = null, allIncomes = null) {
     const balanceElement = document.getElementById('totalBalance');
     balanceElement.style.color = balance >= 0 ? '#28a745' : '#dc3545';
     
-    console.log('📊 KPI calcolati:', { totalExpenses, totalIncomes, balance, savingsRate });
+    console.log('✅ KPI aggiornati nel DOM');
 }
 
 // Ottiene il periodo dal selettore
@@ -975,8 +982,16 @@ function filterByPeriod(transactions, period) {
     });
 }
 
-// Carica i grafici della dashboard
+// Carica i grafici della dashboard - SEMPRE con dati dedicati
 function loadDashboardCharts(allExpenses = null, allIncomes = null) {
+    // Se non ci sono dati, non possiamo caricare i grafici
+    if (!allExpenses || !allIncomes) {
+        console.warn('⚠️ loadDashboardCharts chiamata senza dati - grafici non aggiornati');
+        return;
+    }
+    
+    console.log('📈 Caricamento grafici dashboard con dati dedicati');
+    
     // Distruggi grafici esistenti per evitare conflitti
     if (balanceChart) balanceChart.destroy();
     if (userBalanceChart) userBalanceChart.destroy();
@@ -1002,12 +1017,14 @@ function loadBalanceChart(allExpenses = null, allIncomes = null) {
         
         const currentPeriod = getPeriodFromSelector();
         
-        // Usa i dati passati o quelli globali
-        const expensesToUse = allExpenses || expenses;
-        const incomesToUse = allIncomes || incomes;
+        // SEMPRE usa i dati passati come parametri
+        if (!allExpenses || !allIncomes) {
+            console.warn('⚠️ loadBalanceChart: dati mancanti');
+            return;
+        }
         
-        const filteredExpenses = filterByPeriod(expensesToUse, currentPeriod);
-        const filteredIncomes = filterByPeriod(incomesToUse, currentPeriod);
+        const filteredExpenses = filterByPeriod(allExpenses, currentPeriod);
+        const filteredIncomes = filterByPeriod(allIncomes, currentPeriod);
         
         const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
@@ -1037,12 +1054,18 @@ function loadBalanceChart(allExpenses = null, allIncomes = null) {
 }
 
 // Grafico bilancio per utente
-function loadUserBalanceChart() {
+function loadUserBalanceChart(allExpenses = null, allIncomes = null) {
     const ctx = document.getElementById('userBalanceChart').getContext('2d');
     
+    // SEMPRE usa i dati passati come parametri
+    if (!allExpenses || !allIncomes) {
+        console.warn('⚠️ loadUserBalanceChart: dati mancanti');
+        return;
+    }
+    
     const currentPeriod = getPeriodFromSelector();
-    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
-    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+    const filteredExpenses = filterByPeriod(allExpenses, currentPeriod);
+    const filteredIncomes = filterByPeriod(allIncomes, currentPeriod);
     
     // Raggruppa per utente
     const userBalances = {};
@@ -1083,8 +1106,14 @@ function loadUserBalanceChart() {
 }
 
 // Grafico trend mensile
-function loadTrendChart() {
+function loadTrendChart(allExpenses = null, allIncomes = null) {
     const ctx = document.getElementById('trendChart').getContext('2d');
+    
+    // SEMPRE usa i dati passati come parametri
+    if (!allExpenses || !allIncomes) {
+        console.warn('⚠️ loadTrendChart: dati mancanti');
+        return;
+    }
     
     // Ultimi 6 mesi
     const months = [];
@@ -1098,13 +1127,13 @@ function loadTrendChart() {
         const monthStr = date.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' });
         months.push(monthStr);
         
-        const monthExpenses = expenses.filter(exp => {
+        const monthExpenses = allExpenses.filter(exp => {
             const expDate = new Date(exp.date);
             return expDate.getMonth() === date.getMonth() && 
                    expDate.getFullYear() === date.getFullYear();
         }).reduce((sum, exp) => sum + exp.amount, 0);
         
-        const monthIncomes = incomes.filter(inc => {
+        const monthIncomes = allIncomes.filter(inc => {
             const incDate = new Date(inc.date);
             return incDate.getMonth() === date.getMonth() && 
                    incDate.getFullYear() === date.getFullYear();
@@ -1147,11 +1176,17 @@ function loadTrendChart() {
 }
 
 // Grafico top categorie spese
-function loadTopCategoriesChart() {
+function loadTopCategoriesChart(allExpenses = null, allIncomes = null) {
     const ctx = document.getElementById('topCategoriesChart').getContext('2d');
     
+    // SEMPRE usa i dati passati come parametri
+    if (!allExpenses || !allIncomes) {
+        console.warn('⚠️ loadTopCategoriesChart: dati mancanti');
+        return;
+    }
+    
     const currentPeriod = getPeriodFromSelector();
-    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+    const filteredExpenses = filterByPeriod(allExpenses, currentPeriod);
     
     // Raggruppa per categoria
     const categoryTotals = {};
@@ -1202,8 +1237,8 @@ function setupDashboardEventListeners() {
     const periodSelector = document.getElementById('dashboardPeriod');
     if (periodSelector) {
         periodSelector.addEventListener('change', () => {
-            calculateKPIs();
-            loadDashboardCharts();
+            console.log('📅 Periodo dashboard cambiato - ricarico tutti i dati');
+            loadDashboard(); // Ricarica TUTTO per avere i dati corretti
         });
     }
 }
