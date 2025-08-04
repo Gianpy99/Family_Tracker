@@ -424,6 +424,8 @@ button:hover {
 .kpi-icon {
     font-size: 2.5em;
     opacity: 0.8;
+    font-weight: bold;
+    color: #495057;
 }
 
 .kpi-content {
