@@ -256,13 +256,9 @@ def startup():
         except:
             pass
     
-    # Aggiungi utenti di default se non esistono
-    default_users = ["Dad", "Mom", "Kid1", "Kid2"]
-    for user in default_users:
-        try:
-            c.execute("INSERT OR IGNORE INTO users (name) VALUES (?)", (user,))
-        except:
-            pass
+    # Non creare più utenti di default automaticamente
+    # Gli utenti vengono creati manualmente dall'admin
+    
     # Crea tabella per le entrate
     c.execute("""
     CREATE TABLE IF NOT EXISTS incomes (
