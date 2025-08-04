@@ -426,6 +426,7 @@ async function handleIncomeSubmit(event) {
 
 // Carica lista spese o entrate
 async function loadItems() {
+    console.log('🚀 loadItems() chiamata - currentTab:', currentTab);
     try {
         const endpoint = currentTab === 'expenses' ? '/expenses' : '/incomes';
         console.log(`💰 Caricamento ${currentTab} da:`, `${API_BASE}${endpoint}`);
@@ -465,17 +466,33 @@ async function loadItems() {
 
 // Mostra spese o entrate nella lista
 function displayItems() {
+    console.log('🔄 displayItems() called');
+    console.log('Current tab:', currentTab);
+    console.log('Expenses array:', expenses);
+    console.log('Incomes array:', incomes);
+    
     const itemsList = document.getElementById('itemsList');
+    console.log('🎯 Found itemsList element:', itemsList);
+    if (!itemsList) {
+        console.error('❌ Element itemsList not found!');
+        return;
+    }
+    
     itemsList.innerHTML = '';
 
     const items = currentTab === 'expenses' ? expenses : incomes;
     const itemType = currentTab === 'expenses' ? 'spesa' : 'entrata';
+    
+    console.log('Items to display:', items);
+    console.log('Item type:', itemType);
 
     if (items.length === 0) {
+        console.log('📝 No items to display');
         itemsList.innerHTML = `<p>Nessuna ${itemType} registrata</p>`;
         return;
     }
 
+    console.log(`📝 Displaying ${items.length} items`);
     items.slice(0, 20).forEach(item => {
         const itemElement = document.createElement('div');
         itemElement.className = 'expense-item';
@@ -500,6 +517,8 @@ function displayItems() {
         `;
         itemsList.appendChild(itemElement);
     });
+    
+    console.log('✅ Items displayed successfully');
 }
 
 // Elimina spesa
