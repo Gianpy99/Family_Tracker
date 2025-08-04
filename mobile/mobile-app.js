@@ -4,25 +4,25 @@ let API_BASE;
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     // Se siamo in localhost, usa porta 8082
     API_BASE = 'http://localhost:8082';
-    console.log('� Localhost mode:', API_BASE);
+    console.log('Localhost mode:', API_BASE);
 } else if (window.location.hostname.startsWith('192.168.') || 
            window.location.hostname.startsWith('10.') || 
            window.location.hostname.startsWith('172.')) {
     // Se siamo su rete locale, usa IP con porta 8082
     API_BASE = `http://${window.location.hostname}:8082`;
-    console.log('🏠 LAN mode:', API_BASE);
+    console.log('LAN mode:', API_BASE);
 } else {
     // Accesso esterno tramite port forwarding - forza HTTP per compatibilità mobile
     API_BASE = `http://${window.location.hostname}:8082`;
-    console.log('🌍 External access mode (forced HTTP):', API_BASE);
+    console.log('External access mode (forced HTTP):', API_BASE);
 }
 
 const API_TOKEN = 'family_secret_token';
 
-console.log('🌐 API Base URL:', API_BASE);
-console.log('🌐 Current hostname:', window.location.hostname);
-console.log('🌐 Current protocol:', window.location.protocol);
-console.log('🌐 User Agent contains Mobile:', navigator.userAgent.includes('Mobile'));
+console.log('API Base URL:', API_BASE);
+console.log('Current hostname:', window.location.hostname);
+console.log('Current protocol:', window.location.protocol);
+console.log('User Agent contains Mobile:', navigator.userAgent.includes('Mobile'));
 
 // Headers per le richieste API
 const headers = {
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inizializza funzionalità di sync
     initializeSync();
     
-    console.log(`🚀 App inizializzata - ${offlineExpenses.length} spese offline in coda`);
+    console.log(`App inizializzata - ${offlineExpenses.length} spese offline in coda`);
 });
 
 // Setup event listeners
@@ -102,8 +102,8 @@ async function loadInitialData() {
         
     } catch (error) {
         console.error('Errore nel caricamento dati iniziali:', error);
-        console.log('🔍 API_BASE utilizzato:', API_BASE);
-        console.log('🔍 Headers utilizzati:', headers);
+        console.log('API_BASE utilizzato:', API_BASE);
+        console.log('Headers utilizzati:', headers);
         
         // Fallback to localStorage
         const storedCategories = localStorage.getItem('categories');
@@ -181,7 +181,7 @@ async function handleExpenseSubmit(event) {
             });
 
             if (response.ok) {
-                showToast('💰 Spesa aggiunta online!', 'success');
+                showToast('Spesa aggiunta online!', 'success');
                 resetForm();
                 await loadRecentExpenses();
                 
@@ -202,7 +202,7 @@ async function handleExpenseSubmit(event) {
         offlineExpenses.push(expense);
         saveOfflineExpenses();
         
-        const message = isOnline ? '💾 Salvato offline (errore server)' : '💾 Salvato offline';
+        const message = isOnline ? 'Salvato offline (errore server)' : 'Salvato offline';
         showToast(message, 'warning');
         resetForm();
         displayOfflineExpenses();
@@ -240,47 +240,47 @@ async function loadRecentExpenses() {
 
 // Mostra spese
 function displayExpenses(expenses) {
-    console.log(`📱 displayExpenses chiamata con ${expenses.length} spese`);
+    console.log(`displayExpenses chiamata con ${expenses.length} spese`);
     
     const container = document.getElementById('mobileExpensesList');
     if (!container) {
-        console.error('❌ Container mobileExpensesList non trovato!');
+        console.error('Container mobileExpensesList non trovato!');
         return;
     }
     
-    console.log('✅ Container mobileExpensesList trovato:', container);
+    console.log('Container mobileExpensesList trovato:', container);
     
     if (expenses.length === 0) {
-        console.log('📋 Nessuna spesa da mostrare');
+        console.log('Nessuna spesa da mostrare');
         container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Nessuna spesa registrata</p>';
         return;
     }
     
-    console.log(`📋 Rendering ${expenses.length} spese...`);
+    console.log(`Rendering ${expenses.length} spese...`);
     expenses.forEach((expense, index) => {
-        console.log(`📝 Spesa ${index + 1}: ${expense.category} - ${expense.amount} (offline: ${expense.offline})`);
+        console.log(`Spesa ${index + 1}: ${expense.category} - ${expense.amount} (offline: ${expense.offline})`);
     });
     
     const html = expenses.map(expense => `
         <div class="expense-item ${expense.offline ? 'offline-item' : ''}">
             <div class="expense-left">
                 <div class="expense-category">${expense.category}</div>
-                <div class="expense-user">👤 ${expense.user}</div>
-                <div class="expense-date">📅 ${formatDate(expense.date)}</div>
-                ${expense.offline ? '<div style="color: #e74c3c; font-size: 0.8em;">⚠️ Da sincronizzare</div>' : ''}
+                <div class="expense-user">Utente: ${expense.user}</div>
+                <div class="expense-date">Data: ${formatDate(expense.date)}</div>
+                ${expense.offline ? '<div style="color: #e74c3c; font-size: 0.8em;">Da sincronizzare</div>' : ''}
             </div>
             <div class="expense-amount">${expense.amount.toFixed(2)} ${expense.currency}</div>
         </div>
     `).join('');
     
     container.innerHTML = html;
-    console.log(`✅ HTML aggiornato nel container (lunghezza: ${html.length} caratteri)`);
+    console.log(`HTML aggiornato nel container (lunghezza: ${html.length} caratteri)`);
 }
 
 // Mostra spese offline
 function displayOfflineExpenses() {
-    console.log(`🏠 displayOfflineExpenses chiamata con ${offlineExpenses.length} spese`);
-    console.log('📋 Spese offline:', offlineExpenses.map(e => `${e.category}: ${e.amount}`));
+    console.log(`displayOfflineExpenses chiamata con ${offlineExpenses.length} spese`);
+    console.log('Spese offline:', offlineExpenses.map(e => `${e.category}: ${e.amount}`));
     displayExpenses(offlineExpenses.slice(0, 10));
 }
 
