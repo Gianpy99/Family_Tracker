@@ -12,15 +12,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Directory del progetto
-PROJECT_DIR="/home/pi/Family_Tracker"
+# Directory del progetto (auto-detect dalla posizione dello script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 VENV_DIR="$PROJECT_DIR/venv"
 
 # Controlla se la directory esiste
 if [ ! -d "$PROJECT_DIR" ]; then
     echo -e "${RED}Directory progetto non trovata: $PROJECT_DIR${NC}"
-    echo -e "${YELLOW}Clona prima il repository con:${NC}"
-    echo "cd /home/pi && git clone https://github.com/Gianpy99/Family_Tracker.git"
+    echo -e "${YELLOW}Assicurati di essere nella directory corretta del progetto${NC}"
     exit 1
 fi
 
