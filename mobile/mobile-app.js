@@ -3,8 +3,12 @@ let API_BASE;
 
 // Controlla se stiamo usando ngrok (dominio *.ngrok.io o *.ngrok-free.app)
 if (window.location.hostname.includes('.ngrok.io') || window.location.hostname.includes('.ngrok-free.app')) {
-    // Se siamo su ngrok, usa HTTPS con la stessa porta
-    API_BASE = `https://${window.location.hostname}`;
+    // Per ngrok, dobbiamo usare due tunnel separati
+    // Questo URL deve essere configurato manualmente con l'URL del backend ngrok
+    API_BASE = 'https://YOUR_BACKEND_NGROK_URL.ngrok-free.app';
+    
+    // Per ora usa lo stesso dominio con porta diversa (non funzionerà, ma è un placeholder)
+    console.warn('⚠️ CONFIGURAZIONE NGROK INCOMPLETA: aggiorna API_BASE con l\'URL del backend ngrok');
 } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     // Se siamo in localhost, usa porta 8082
     API_BASE = 'http://localhost:8082';
