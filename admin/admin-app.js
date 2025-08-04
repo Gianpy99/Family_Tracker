@@ -29,6 +29,41 @@ let categories = [];
 let users = [];
 let expenses = [];
 
+// Funzione per valutare formule matematiche in modo sicuro
+function evaluateMathExpression(expression) {
+    try {
+        // Rimuovi spazi e converti a stringa
+        const expr = expression.toString().replace(/\s/g, '');
+        
+        // Verifica che contenga solo numeri, operatori matematici di base e punti decimali
+        if (!/^[0-9+\-*/.(),\s]+$/.test(expr)) {
+            throw new Error('Formula non valida: caratteri non consentiti');
+        }
+        
+        // Verifica che non ci siano operatori consecutivi
+        if (/[+\-*/]{2,}/.test(expr)) {
+            throw new Error('Formula non valida: operatori consecutivi');
+        }
+        
+        // Verifica che non inizi o finisca con un operatore (eccetto -)
+        if (/^[+*/]|[+\-*/]$/.test(expr)) {
+            throw new Error('Formula non valida: inizia o termina con operatore');
+        }
+        
+        // Usa Function invece di eval per maggiore sicurezza
+        const result = Function('"use strict"; return (' + expr + ')')();
+        
+        // Verifica che il risultato sia un numero valido
+        if (isNaN(result) || !isFinite(result)) {
+            throw new Error('Risultato non valido');
+        }
+        
+        return parseFloat(result.toFixed(2));
+    } catch (error) {
+        throw new Error('Formula non valida: ' + error.message);
+    }
+}
+
 // Inizializzazione
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Admin Panel inizializzato');
@@ -264,11 +299,33 @@ async function saveExpenseEdit(event) {
     event.preventDefault();
     
     const expenseId = document.getElementById('editExpenseId').value;
+    let amount;
+    
+    try {
+        // Ottieni il valore del campo importo
+        const amountInput = document.getElementById('editAmount').value.trim();
+        
+        // Se contiene operatori matematici, valuta come formula
+        if (/[+\-*/]/.test(amountInput)) {
+            amount = evaluateMathExpression(amountInput);
+            console.log(`Formula "${amountInput}" = ${amount}`);
+            showToast(`Formula calcolata: ${amountInput} = ${amount}€`, 'success');
+        } else {
+            amount = parseFloat(amountInput);
+            if (isNaN(amount) || amount <= 0) {
+                throw new Error('Importo non valido');
+            }
+        }
+    } catch (error) {
+        showToast('Errore nella formula: ' + error.message, 'error');
+        return;
+    }
+    
     const expenseData = {
         id: parseInt(expenseId),
         date: document.getElementById('editDate').value,
         category: document.getElementById('editCategory').value,
-        amount: parseFloat(document.getElementById('editAmount').value),
+        amount: amount,
         currency: document.getElementById('editCurrency').value,
         user: document.getElementById('editUser').value
     };
@@ -401,11 +458,33 @@ async function saveIncomeEdit(event) {
     event.preventDefault();
     
     const incomeId = document.getElementById('editIncomeId').value;
+    let amount;
+    
+    try {
+        // Ottieni il valore del campo importo
+        const amountInput = document.getElementById('editIncomeAmount').value.trim();
+        
+        // Se contiene operatori matematici, valuta come formula
+        if (/[+\-*/]/.test(amountInput)) {
+            amount = evaluateMathExpression(amountInput);
+            console.log(`Formula "${amountInput}" = ${amount}`);
+            showToast(`Formula calcolata: ${amountInput} = ${amount}€`, 'success');
+        } else {
+            amount = parseFloat(amountInput);
+            if (isNaN(amount) || amount <= 0) {
+                throw new Error('Importo non valido');
+            }
+        }
+    } catch (error) {
+        showToast('Errore nella formula: ' + error.message, 'error');
+        return;
+    }
+    
     const incomeData = {
         id: parseInt(incomeId),
         date: document.getElementById('editIncomeDate').value,
         category: document.getElementById('editIncomeCategory').value,
-        amount: parseFloat(document.getElementById('editIncomeAmount').value),
+        amount: amount,
         currency: document.getElementById('editIncomeCurrency').value,
         user: document.getElementById('editIncomeUser').value
     };

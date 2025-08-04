@@ -42,6 +42,41 @@ let userBalanceChart = null;
 let trendChart = null;
 let topCategoriesChart = null;
 
+// Funzione per valutare formule matematiche in modo sicuro
+function evaluateMathExpression(expression) {
+    try {
+        // Rimuovi spazi e converti a stringa
+        const expr = expression.toString().replace(/\s/g, '');
+        
+        // Verifica che contenga solo numeri, operatori matematici di base e punti decimali
+        if (!/^[0-9+\-*/.(),\s]+$/.test(expr)) {
+            throw new Error('Formula non valida: caratteri non consentiti');
+        }
+        
+        // Verifica che non ci siano operatori consecutivi
+        if (/[+\-*/]{2,}/.test(expr)) {
+            throw new Error('Formula non valida: operatori consecutivi');
+        }
+        
+        // Verifica che non inizi o finisca con un operatore (eccetto -)
+        if (/^[+*/]|[+\-*/]$/.test(expr)) {
+            throw new Error('Formula non valida: inizia o termina con operatore');
+        }
+        
+        // Usa Function invece di eval per maggiore sicurezza
+        const result = Function('"use strict"; return (' + expr + ')')();
+        
+        // Verifica che il risultato sia un numero valido
+        if (isNaN(result) || !isFinite(result)) {
+            throw new Error('Risultato non valido');
+        }
+        
+        return parseFloat(result.toFixed(2));
+    } catch (error) {
+        throw new Error('Formula non valida: ' + error.message);
+    }
+}
+
 // Inizializzazione
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Applicazione inizializzata');
@@ -280,10 +315,32 @@ async function handleExpenseSubmit(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
+    let amount;
+    
+    try {
+        // Ottieni il valore del campo importo
+        const amountInput = document.getElementById('amount').value.trim();
+        
+        // Se contiene operatori matematici, valuta come formula
+        if (/[+\-*/]/.test(amountInput)) {
+            amount = evaluateMathExpression(amountInput);
+            console.log(`Formula "${amountInput}" = ${amount}`);
+            showSuccess(`Formula calcolata: ${amountInput} = ${amount}€`);
+        } else {
+            amount = parseFloat(amountInput);
+            if (isNaN(amount) || amount <= 0) {
+                throw new Error('Importo non valido');
+            }
+        }
+    } catch (error) {
+        showError('Errore nella formula: ' + error.message);
+        return;
+    }
+    
     const expense = {
         date: document.getElementById('date').value,
         category: document.getElementById('category').value,
-        amount: parseFloat(document.getElementById('amount').value),
+        amount: amount,
         currency: document.getElementById('currency').value,
         user: document.getElementById('user').value
     };
@@ -313,10 +370,32 @@ async function handleExpenseSubmit(event) {
 async function handleIncomeSubmit(event) {
     event.preventDefault();
     
+    let amount;
+    
+    try {
+        // Ottieni il valore del campo importo
+        const amountInput = document.getElementById('incomeAmount').value.trim();
+        
+        // Se contiene operatori matematici, valuta come formula
+        if (/[+\-*/]/.test(amountInput)) {
+            amount = evaluateMathExpression(amountInput);
+            console.log(`Formula "${amountInput}" = ${amount}`);
+            showSuccess(`Formula calcolata: ${amountInput} = ${amount}€`);
+        } else {
+            amount = parseFloat(amountInput);
+            if (isNaN(amount) || amount <= 0) {
+                throw new Error('Importo non valido');
+            }
+        }
+    } catch (error) {
+        showError('Errore nella formula: ' + error.message);
+        return;
+    }
+    
     const income = {
         date: document.getElementById('incomeDate').value,
         category: document.getElementById('incomeCategory').value,
-        amount: parseFloat(document.getElementById('incomeAmount').value),
+        amount: amount,
         currency: document.getElementById('incomeCurrency').value,
         user: document.getElementById('incomeUser').value
     };

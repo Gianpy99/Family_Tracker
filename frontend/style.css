@@ -507,3 +507,17 @@ button:hover {
         font-size: 3em;
     }
 }
+
+/* Formula hints */
+.formula-hint {
+    display: block;
+    color: #7f8c8d;
+    font-size: 0.85em;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.form-group input[type="text"]#amount,
+.form-group input[type="text"]#incomeAmount {
+    font-family: 'Courier New', monospace;
+}
