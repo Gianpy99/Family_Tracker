@@ -12,15 +12,17 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     API_BASE = `http://${window.location.hostname}:8082`;
     console.log('🏠 LAN mode:', API_BASE);
 } else {
-    // Accesso esterno tramite port forwarding - usa stessa porta del web
-    API_BASE = `${window.location.protocol}//${window.location.hostname}:8082`;
-    console.log('🌍 External access mode:', API_BASE);
+    // Accesso esterno tramite port forwarding - forza HTTP per compatibilità mobile
+    API_BASE = `http://${window.location.hostname}:8082`;
+    console.log('🌍 External access mode (forced HTTP):', API_BASE);
 }
 
 const API_TOKEN = 'family_secret_token';
 
 console.log('🌐 API Base URL:', API_BASE);
 console.log('🌐 Current hostname:', window.location.hostname);
+console.log('🌐 Current protocol:', window.location.protocol);
+console.log('🌐 User Agent contains Mobile:', navigator.userAgent.includes('Mobile'));
 
 // Headers per le richieste API
 const headers = {
@@ -100,6 +102,9 @@ async function loadInitialData() {
         
     } catch (error) {
         console.error('Errore nel caricamento dati iniziali:', error);
+        console.log('🔍 API_BASE utilizzato:', API_BASE);
+        console.log('🔍 Headers utilizzati:', headers);
+        
         // Fallback to localStorage
         const storedCategories = localStorage.getItem('categories');
         const storedUsers = localStorage.getItem('users');
@@ -110,7 +115,7 @@ async function loadInitialData() {
         populateCategorySelect();
         populateUserSelect();
         
-        showToast('Modalità offline attiva', 'error');
+        showToast('Modalità offline attiva - Controllare console per dettagli', 'error');
     }
 }
 
