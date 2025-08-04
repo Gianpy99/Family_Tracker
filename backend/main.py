@@ -1,10 +1,22 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
 import os
+import logging
 from datetime import datetime
+
+# Configurazione logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('backend.log'),
+        logging.StreamHandler()
+    ]
+)
 
 # Configurazione
 SHARED_SECRET = "family_secret_token"
@@ -54,6 +66,26 @@ class UpdateIncome(BaseModel):
 # FastAPI app
 app = FastAPI()
 
+# Middleware per sicurezza e logging
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    # Log richieste sospette
+    client_ip = request.client.host
+    user_agent = request.headers.get("user-agent", "Unknown")
+    
+    # Blocca richieste con caratteri non ASCII nel path
+    try:
+        request.url.path.encode('ascii')
+    except UnicodeEncodeError:
+        logging.warning(f"Richiesta con caratteri non ASCII da {client_ip}: {request.url.path}")
+        return JSONResponse(status_code=400, content={"error": "Bad request"})
+    
+    # Log richieste normali
+    logging.info(f"Request: {client_ip} - {request.method} {request.url.path}")
+    
+    response = await call_next(request)
+    return response
+
 # CORS per frontend/mobile
 app.add_middleware(
     CORSMiddleware,
@@ -71,6 +103,18 @@ def get_db():
 def check_auth(x_token: str = Header(...)):
     if x_token != SHARED_SECRET:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+# Handler per errori di validazione
+@app.exception_handler(422)
+async def validation_exception_handler(request: Request, exc):
+    logging.warning(f"Errore di validazione da {request.client.host}: {exc}")
+    return JSONResponse(status_code=400, content={"error": "Invalid request format"})
+
+# Handler per errori generali
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc):
+    logging.error(f"Errore interno da {request.client.host}: {exc}")
+    return JSONResponse(status_code=500, content={"error": "Internal server error"})
 
 # Inizializzazione DB
 @app.on_event("startup")
