@@ -30,8 +30,8 @@ SUSPICIOUS_PATTERNS = [
     'admin/config', '/config', '/setup', '/install'
 ]
 
-# Rate limiting: max 100 richieste per IP in 10 minuti
-MAX_REQUESTS_PER_IP = 100
+# Rate limiting: max 1000 richieste per IP in 10 minuti (aumentato per debugging)
+MAX_REQUESTS_PER_IP = 1000
 TIME_WINDOW = 600  # 10 minuti
 
 def is_ip_blocked(ip: str) -> bool:
@@ -708,6 +708,22 @@ def get_security_stats():
             "suspicious_patterns": len([ip for ip in BLOCKED_IPS])
         }
     }
+
+@app.post("/admin/unblock-ip", dependencies=[Depends(check_auth)])
+def unblock_ip(request: dict):
+    """Sblocca un IP specifico"""
+    ip_to_unblock = request.get("ip")
+    if not ip_to_unblock:
+        raise HTTPException(status_code=400, detail="IP address required")
+    
+    if ip_to_unblock in BLOCKED_IPS:
+        BLOCKED_IPS.remove(ip_to_unblock)
+        if ip_to_unblock in REQUEST_COUNTS:
+            REQUEST_COUNTS[ip_to_unblock] = []
+        logging.info(f"✅ IP {ip_to_unblock} unblocked by admin")
+        return {"message": f"IP {ip_to_unblock} successfully unblocked"}
+    else:
+        return {"message": f"IP {ip_to_unblock} was not blocked"}
 
 # Health check endpoint
 @app.get("/health")

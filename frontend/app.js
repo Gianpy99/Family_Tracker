@@ -851,17 +851,17 @@ async function loadDashboard() {
     try {
         console.log('🏠 Caricamento dashboard...');
         
-        // Carica tutte le spese e entrate
-        await Promise.all([
-            loadAllExpenses(),
-            loadAllIncomes()
+        // Carica TUTTI i dati per la dashboard (separati dalle variabili globali)
+        const [allExpenses, allIncomes] = await Promise.all([
+            loadAllDataForDashboard('/expenses'),
+            loadAllDataForDashboard('/incomes')
         ]);
         
-        // Calcola e mostra KPI
-        calculateKPIs();
+        // Calcola e mostra KPI con tutti i dati
+        calculateKPIs(allExpenses, allIncomes);
         
-        // Carica grafici
-        loadDashboardCharts();
+        // Carica grafici con tutti i dati
+        loadDashboardCharts(allExpenses, allIncomes);
         
         console.log('✅ Dashboard caricata');
     } catch (error) {
@@ -870,16 +870,17 @@ async function loadDashboard() {
     }
 }
 
-// Carica tutte le spese per la dashboard
-async function loadAllExpenses() {
+// Carica dati per la dashboard senza toccare le variabili globali
+async function loadAllDataForDashboard(endpoint) {
     try {
-        const response = await fetch(`${API_BASE}/expenses`, { headers });
+        const response = await fetch(`${API_BASE}${endpoint}`, { headers });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        expenses = await response.json();
-        console.log('💸 Spese caricate per dashboard:', expenses.length);
+        const data = await response.json();
+        console.log(`� Dati caricati per dashboard da ${endpoint}:`, data.length);
+        return data;
     } catch (error) {
-        console.error('❌ Errore caricamento spese:', error);
-        expenses = [];
+        console.error(`❌ Errore caricamento da ${endpoint}:`, error);
+        return [];
     }
 }
 
@@ -897,18 +898,35 @@ async function loadAllIncomes() {
 }
 
 // Calcola e mostra i KPI
-function calculateKPIs() {
+function calculateKPIs(allExpenses = null, allIncomes = null) {
     const currentPeriod = getPeriodFromSelector();
     
+    // Usa i dati passati come parametri o quelli globali
+    const expensesToUse = allExpenses || expenses;
+    const incomesToUse = allIncomes || incomes;
+    
+    console.log('🧮 Calcolando KPI con:', {
+        expenses: expensesToUse.length,
+        incomes: incomesToUse.length,
+        period: currentPeriod
+    });
+    
     // Filtra per periodo selezionato
-    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
-    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+    const filteredExpenses = filterByPeriod(expensesToUse, currentPeriod);
+    const filteredIncomes = filterByPeriod(incomesToUse, currentPeriod);
     
     // Calcola totali
     const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
     const balance = totalIncomes - totalExpenses;
     const savingsRate = totalIncomes > 0 ? ((balance / totalIncomes) * 100) : 0;
+    
+    console.log('📊 KPI calcolati:', {
+        totalExpenses,
+        totalIncomes,
+        balance,
+        savingsRate
+    });
     
     // Aggiorna display
     document.getElementById('totalExpenses').textContent = `€ ${totalExpenses.toFixed(2)}`;
@@ -957,21 +975,21 @@ function filterByPeriod(transactions, period) {
 }
 
 // Carica i grafici della dashboard
-function loadDashboardCharts() {
+function loadDashboardCharts(allExpenses = null, allIncomes = null) {
     // Distruggi grafici esistenti per evitare conflitti
     if (balanceChart) balanceChart.destroy();
     if (userBalanceChart) userBalanceChart.destroy();
     if (trendChart) trendChart.destroy();
     if (topCategoriesChart) topCategoriesChart.destroy();
     
-    loadBalanceChart();
-    loadUserBalanceChart();
-    loadTrendChart();
-    loadTopCategoriesChart();
+    loadBalanceChart(allExpenses, allIncomes);
+    loadUserBalanceChart(allExpenses, allIncomes);
+    loadTrendChart(allExpenses, allIncomes);
+    loadTopCategoriesChart(allExpenses, allIncomes);
 }
 
 // Grafico Entrate vs Spese
-function loadBalanceChart() {
+function loadBalanceChart(allExpenses = null, allIncomes = null) {
     try {
         const canvasElement = document.getElementById('balanceChart');
         if (!canvasElement) {
@@ -982,8 +1000,13 @@ function loadBalanceChart() {
         const ctx = canvasElement.getContext('2d');
         
         const currentPeriod = getPeriodFromSelector();
-        const filteredExpenses = filterByPeriod(expenses, currentPeriod);
-        const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+        
+        // Usa i dati passati o quelli globali
+        const expensesToUse = allExpenses || expenses;
+        const incomesToUse = allIncomes || incomes;
+        
+        const filteredExpenses = filterByPeriod(expensesToUse, currentPeriod);
+        const filteredIncomes = filterByPeriod(incomesToUse, currentPeriod);
         
         const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
