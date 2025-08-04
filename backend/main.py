@@ -67,6 +67,7 @@ def startup():
     conn.commit()
     conn.close()
 
+
 # API Spese
 @app.post("/expenses", dependencies=[Depends(check_auth)])
 def add_expense(expense: Expense):
@@ -77,8 +78,9 @@ def add_expense(expense: Expense):
         (expense.date, expense.category, expense.amount, expense.currency, expense.user)
     )
     conn.commit()
+    expense_id = c.lastrowid
     conn.close()
-    return {"status": "ok"}
+    return {"status": "ok", "id": expense_id}
 
 @app.get("/expenses", response_model=List[Expense], dependencies=[Depends(check_auth)])
 def list_expenses():
@@ -88,6 +90,66 @@ def list_expenses():
     rows = c.fetchall()
     conn.close()
     return [Expense(**dict(row)) for row in rows]
+
+# Modifica spesa
+@app.put("/expenses/{expense_id}", dependencies=[Depends(check_auth)])
+def update_expense(expense_id: int, expense: Expense):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE expenses SET date=?, category=?, amount=?, currency=?, user=? WHERE id=?",
+        (expense.date, expense.category, expense.amount, expense.currency, expense.user, expense_id)
+    )
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+# Elimina spesa
+@app.delete("/expenses/{expense_id}", dependencies=[Depends(check_auth)])
+def delete_expense(expense_id: int):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+# Report mensile per categoria, utente, valuta
+@app.get("/reports/monthly", dependencies=[Depends(check_auth)])
+def monthly_report(year: int, month: int):
+    conn = get_db()
+    c = conn.cursor()
+    start = f"{year:04d}-{month:02d}-01"
+    if month == 12:
+        end = f"{year+1:04d}-01-01"
+    else:
+        end = f"{year:04d}-{month+1:02d}-01"
+    # Totali per categoria
+    c.execute("""
+        SELECT category, currency, SUM(amount) as total
+        FROM expenses
+        WHERE date >= ? AND date < ?
+        GROUP BY category, currency
+    """, (start, end))
+    by_category = [dict(row) for row in c.fetchall()]
+    # Totali per utente
+    c.execute("""
+        SELECT user, currency, SUM(amount) as total
+        FROM expenses
+        WHERE date >= ? AND date < ?
+        GROUP BY user, currency
+    """, (start, end))
+    by_user = [dict(row) for row in c.fetchall()]
+    # Totali per giorno
+    c.execute("""
+        SELECT date, currency, SUM(amount) as total
+        FROM expenses
+        WHERE date >= ? AND date < ?
+        GROUP BY date, currency
+    """, (start, end))
+    by_date = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return {"by_category": by_category, "by_user": by_user, "by_date": by_date}
 
 # API Categorie
 @app.get("/categories", response_model=List[Category], dependencies=[Depends(check_auth)])
