@@ -42,9 +42,10 @@ echo -e "${YELLOW}Frontend (HTTP Server - Porta 8090):${NC}"
 FRONTEND_PID=$(ps aux | grep "python.*http.server.*8090" | grep -v grep | awk '{print $2}')
 if [ ! -z "$FRONTEND_PID" ]; then
     echo -e "${GREEN}Running (PID: $FRONTEND_PID)${NC}"
-    echo -e "   URL Locale: http://$PI_IP:8090"
-    echo -e "   URL Esterno: http://88.98.239.238:8090"
-    echo -e "   Mobile PWA: http://88.98.239.238:8090/mobile/"
+    echo -e "   URL Locale: http://$PI_IP:8090/frontend/"
+    echo -e "   URL Esterno: http://88.98.239.238:8090/frontend/"
+    echo -e "   Mobile PWA: http://$PI_IP:8090/mobile/ (locale)"
+    echo -e "   Mobile PWA: http://88.98.239.238:8090/mobile/ (esterno)"
     
     # Test connessione
     if curl -s "http://localhost:8090" > /dev/null 2>&1; then
@@ -67,6 +68,6 @@ done
 echo ""
 echo -e "${YELLOW}Test Port Forwarding:${NC}"
 echo -e "${BLUE}Testa manualmente questi URL dal tuo telefono:${NC}"
-echo -e "   http://88.98.239.238:8090 (Frontend)"
+echo -e "   http://88.98.239.238:8090/frontend/ (Frontend)"
 echo -e "   http://88.98.239.238:8082/health (Backend)"
 echo -e "   http://88.98.239.238:8090/mobile/ (Mobile PWA)"

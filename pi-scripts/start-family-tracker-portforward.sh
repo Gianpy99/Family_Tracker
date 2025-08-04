@@ -55,7 +55,7 @@ sleep 3
 
 # Avvia il frontend
 echo -e "${YELLOW}Avvio frontend...${NC}"
-cd ../frontend
+cd ../
 python -m http.server 8090 &
 FRONTEND_PID=$!
 echo -e "${GREEN}Frontend avviato (PID: $FRONTEND_PID) - Porta 8090${NC}"
@@ -64,11 +64,12 @@ echo ""
 echo -e "${GREEN}Family Tracker avviato con successo!${NC}"
 echo ""
 echo -e "${BLUE}Accesso Locale:${NC}"
-echo -e "   Frontend: http://$PI_IP:8090"
+echo -e "   Frontend: http://$PI_IP:8090/frontend/"
 echo -e "   Backend:  http://$PI_IP:8082"
+echo -e "   Mobile PWA: http://$PI_IP:8090/mobile/"
 echo ""
 echo -e "${BLUE}Accesso Esterno (Port Forwarding):${NC}"
-echo -e "   Frontend: http://88.98.239.238:8090"
+echo -e "   Frontend: http://88.98.239.238:8090/frontend/"
 echo -e "   Backend:  http://88.98.239.238:8082"
 echo -e "   Mobile PWA: http://88.98.239.238:8090/mobile/"
 echo ""
