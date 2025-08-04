@@ -203,3 +203,16 @@ USERS = ["Dad", "Mom", "Kid1", "Kid2"]
 @app.get("/users", dependencies=[Depends(check_auth)])
 def get_users():
     return USERS
+
+# Health check endpoint
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "message": "Family Tracker Backend is running"}
+
+# Avvio del server
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Avvio Family Tracker Backend...")
+    print(f"📊 Database: {DB_PATH}")
+    print(f"🔑 Token: {SHARED_SECRET}")
+    uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")
