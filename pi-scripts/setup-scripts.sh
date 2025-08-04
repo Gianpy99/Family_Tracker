@@ -3,9 +3,9 @@
 
 chmod +x pi-scripts/*.sh
 
-echo "✅ Script resi eseguibili!"
+echo "Script resi eseguibili!"
 echo ""
-echo "📋 Comandi disponibili:"
+echo "Comandi disponibili:"
 echo "  ./pi-scripts/start-family-tracker-portforward.sh  # Avvia i servizi"
 echo "  ./pi-scripts/stop-family-tracker.sh               # Ferma i servizi"  
 echo "  ./pi-scripts/status-family-tracker.sh             # Controlla lo status"
