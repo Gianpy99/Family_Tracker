@@ -324,3 +324,19 @@ body {
         background-color: #3d566e;
     }
 }
+
+/* Formula hints per mobile */
+.formula-hint {
+    display: block;
+    color: #7f8c8d;
+    font-size: 0.8em;
+    margin-top: 4px;
+    font-style: italic;
+    line-height: 1.2;
+}
+
+.input-group input[type="text"]#mobileAmount,
+.input-group input[type="text"]#incomeAmount {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}

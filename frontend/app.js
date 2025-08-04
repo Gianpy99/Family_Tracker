@@ -130,7 +130,7 @@ async function loadInitialData() {
         populateUserSelect();
         
         console.log('🎉 Dati iniziali caricati con successo!');
-        showSuccess('Connesso al server! Pronto per l\'uso.');
+        // Rimuovo il messaggio di successo ridondante
     } catch (error) {
         console.error('❌ Errore nel caricamento dati iniziali:', error);
         console.log('🔧 Attivazione modalità fallback...');
@@ -193,6 +193,7 @@ function setTodayDate() {
 
 // Gestione navigazione tab
 function switchTab(tabName) {
+    console.log(`🔄 Switching to tab: ${tabName}`);
     currentTab = tabName;
     
     // Aggiorna pulsanti tab
@@ -217,10 +218,12 @@ function switchTab(tabName) {
     } else if (tabName === 'expenses') {
         expenseSection.style.display = 'block';
         recentTitle.textContent = 'Spese Recenti';
+        console.log('📝 Loading expenses for tab');
         loadItems(); // Ricarica la lista spese
     } else if (tabName === 'incomes') {
         incomeSection.style.display = 'block';
         recentTitle.textContent = 'Entrate Recenti';
+        console.log('💰 Loading incomes for tab');
         loadItems(); // Ricarica la lista entrate
     }
 }
@@ -325,7 +328,7 @@ async function handleExpenseSubmit(event) {
         if (/[+\-*/]/.test(amountInput)) {
             amount = evaluateMathExpression(amountInput);
             console.log(`Formula "${amountInput}" = ${amount}`);
-            showSuccess(`Formula calcolata: ${amountInput} = ${amount}€`);
+            // Rimuovo il messaggio di successo per la formula, è troppo invasivo
         } else {
             amount = parseFloat(amountInput);
             if (isNaN(amount) || amount <= 0) {
@@ -380,7 +383,7 @@ async function handleIncomeSubmit(event) {
         if (/[+\-*/]/.test(amountInput)) {
             amount = evaluateMathExpression(amountInput);
             console.log(`Formula "${amountInput}" = ${amount}`);
-            showSuccess(`Formula calcolata: ${amountInput} = ${amount}€`);
+            // Rimuovo il messaggio di successo per la formula, è troppo invasivo
         } else {
             amount = parseFloat(amountInput);
             if (isNaN(amount) || amount <= 0) {
@@ -435,10 +438,12 @@ async function loadItems() {
         const items = await response.json();
         if (currentTab === 'expenses') {
             expenses = items;
+            console.log(`✅ Spese caricate:`, items.length, 'elementi');
         } else {
             incomes = items;
+            console.log(`✅ Entrate caricate:`, items.length, 'elementi');
         }
-        console.log(`✅ ${currentTab} caricate:`, items.length, 'elementi');
+        
         displayItems();
         updateLastRefreshTime();
     } catch (error) {
@@ -454,7 +459,7 @@ async function loadItems() {
         displayItems();
         
         // Non mostriamo errore qui perché potrebbe essere già stato mostrato
-        console.log('ℹ️ Lista spese non disponibile - modalità offline');
+        console.log('ℹ️ Lista non disponibile - modalità offline');
     }
 }
 
@@ -553,7 +558,7 @@ async function loadMonthlyReport() {
         }
         
         displayCharts(report);
-        showSuccess(`Report per ${month}/${year} caricato con successo!`);
+        console.log(`Report per ${month}/${year} caricato con successo!`);
         
     } catch (error) {
         console.error('❌ Errore nel caricamento report:', error);
@@ -695,13 +700,62 @@ function formatDate(dateString) {
 }
 
 function showSuccess(message) {
-    // Implementazione semplice - puoi migliorare con una libreria di notifiche
-    alert('✅ ' + message);
+    console.log('✅ Success:', message);
+    showToast(message, 'success');
 }
 
 function showError(message) {
-    // Implementazione semplice - puoi migliorare con una libreria di notifiche
-    alert('❌ ' + message);
+    console.error('❌ Error:', message);
+    showToast(message, 'error');
+}
+
+// Sistema di toast non invasivo
+function showToast(message, type = 'info') {
+    // Rimuovi toast esistenti dello stesso tipo
+    const existingToasts = document.querySelectorAll(`.toast.${type}`);
+    existingToasts.forEach(toast => toast.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    // Stili del toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 1000;
+        font-size: 14px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        max-width: 350px;
+        word-wrap: break-word;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animazione di entrata
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Rimozione automatica
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, type === 'error' ? 5000 : 3000); // Errori visibili più a lungo
 }
 
 // Placeholder per edit expense
