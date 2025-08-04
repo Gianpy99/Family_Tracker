@@ -46,6 +46,8 @@ if [ ! -z "$FRONTEND_PID" ]; then
     echo -e "   URL Esterno: http://88.98.239.238:8090/frontend/"
     echo -e "   Mobile PWA: http://$PI_IP:8090/mobile/ (locale)"
     echo -e "   Mobile PWA: http://88.98.239.238:8090/mobile/ (esterno)"
+    echo -e "   Admin Panel: http://$PI_IP:8090/admin/ (locale)"
+    echo -e "   Admin Panel: http://88.98.239.238:8090/admin/ (esterno)"
     
     # Test connessione
     if curl -s "http://localhost:8090" > /dev/null 2>&1; then

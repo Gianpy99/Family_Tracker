@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tracker - Admin Panel</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="admin-header">
+            <h1>🔧 Family Tracker - Admin Panel</h1>
+            <div class="admin-nav">
+                <button class="nav-btn active" data-section="dashboard">Dashboard</button>
+                <button class="nav-btn" data-section="expenses">Gestisci Spese</button>
+                <button class="nav-btn" data-section="users">Gestisci Utenti</button>
+                <button class="nav-btn" data-section="database">Database</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="admin-section active">
+            <div class="card">
+                <h2>📊 Statistiche Database</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Statistiche verranno caricate dinamicamente -->
+                </div>
+                <button id="refreshStats" class="btn btn-primary">🔄 Aggiorna Statistiche</button>
+            </div>
+        </section>
+
+        <!-- Expenses Management Section -->
+        <section id="expenses" class="admin-section">
+            <div class="card">
+                <h2>💰 Gestione Spese</h2>
+                <div class="table-controls">
+                    <input type="text" id="expenseSearch" placeholder="Cerca spese..." class="search-input">
+                    <button id="loadExpenses" class="btn btn-primary">📋 Carica Spese</button>
+                </div>
+                <div class="table-container">
+                    <table id="expensesTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Importo</th>
+                                <th>Valuta</th>
+                                <th>Utente</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody">
+                            <!-- Spese verranno caricate dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users Management Section -->
+        <section id="users" class="admin-section">
+            <div class="card">
+                <h2>👥 Gestione Utenti</h2>
+                
+                <!-- Add New User -->
+                <div class="form-section">
+                    <h3>Aggiungi Nuovo Utente</h3>
+                    <div class="form-group">
+                        <input type="text" id="newUserName" placeholder="Nome utente" class="form-input">
+                        <button id="addUser" class="btn btn-success">➕ Aggiungi</button>
+                    </div>
+                </div>
+
+                <!-- Users List -->
+                <div class="users-section">
+                    <h3>Utenti Esistenti</h3>
+                    <div id="usersList" class="users-list">
+                        <!-- Utenti verranno caricati dinamicamente -->
+                    </div>
+                    <button id="loadUsers" class="btn btn-primary">🔄 Ricarica Utenti</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Management Section -->
+        <section id="database" class="admin-section">
+            <div class="card">
+                <h2>🗄️ Gestione Database</h2>
+                
+                <div class="warning-section">
+                    <h3>⚠️ Operazioni Pericolose</h3>
+                    <p>Le seguenti operazioni sono <strong>irreversibili</strong>. Procedi con cautela.</p>
+                </div>
+
+                <div class="danger-section">
+                    <h3>🔥 Reset Completo Database</h3>
+                    <p>Elimina <strong>tutte</strong> le spese e ripristina categorie/utenti predefiniti.</p>
+                    <div class="reset-controls">
+                        <label>
+                            <input type="checkbox" id="confirmReset"> 
+                            Confermo di voler resettare completamente il database
+                        </label>
+                        <button id="resetDatabase" class="btn btn-danger" disabled>🗑️ RESET DATABASE</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal per modificare spese -->
+    <div id="editExpenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Modifica Spesa</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editExpenseForm">
+                    <input type="hidden" id="editExpenseId">
+                    <div class="form-group">
+                        <label for="editDate">Data:</label>
+                        <input type="date" id="editDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory">Categoria:</label>
+                        <select id="editCategory" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAmount">Importo:</label>
+                        <input type="number" id="editAmount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCurrency">Valuta:</label>
+                        <select id="editCurrency" required>
+                            <option value="EUR">EUR</option>
+                            <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUser">Utente:</label>
+                        <select id="editUser" required></select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEdit">Annulla</button>
+                        <button type="submit" class="btn btn-primary">💾 Salva Modifiche</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast per notifiche -->
+    <div id="toast" class="toast"></div>
+
+    <script src="admin-app.js"></script>
+</body>
+</html>
