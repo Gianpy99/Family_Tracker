@@ -6,7 +6,73 @@ from typing import List, Optional
 import sqlite3
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+import ipaddress
+from collections import defaultdict
+import time
+
+# Configurazione logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('backend.log'),
+        logging.StreamHandler()
+    ]
+)
+
+# Sistema di sicurezza avanzato
+BLOCKED_IPS = set()
+REQUEST_COUNTS = defaultdict(list)
+SUSPICIOUS_PATTERNS = [
+    'CONNECT', 'PROPFIND', 'MKCOL', 'OPTIONS', 'TRACE',
+    '.php', '.asp', '.jsp', 'wp-admin', 'phpMyAdmin',
+    'admin/config', '/config', '/setup', '/install'
+]
+
+# Rate limiting: max 100 richieste per IP in 10 minuti
+MAX_REQUESTS_PER_IP = 100
+TIME_WINDOW = 600  # 10 minuti
+
+def is_ip_blocked(ip: str) -> bool:
+    """Controlla se un IP è bloccato"""
+    return ip in BLOCKED_IPS
+
+def is_rate_limited(ip: str) -> bool:
+    """Controlla rate limiting per IP"""
+    now = time.time()
+    # Rimuovi richieste vecchie
+    REQUEST_COUNTS[ip] = [req_time for req_time in REQUEST_COUNTS[ip] if now - req_time < TIME_WINDOW]
+    
+    # Aggiungi richiesta corrente
+    REQUEST_COUNTS[ip].append(now)
+    
+    # Controlla se supera il limite
+    if len(REQUEST_COUNTS[ip]) > MAX_REQUESTS_PER_IP:
+        BLOCKED_IPS.add(ip)
+        logging.warning(f"🚫 IP {ip} blocked for rate limiting ({len(REQUEST_COUNTS[ip])} requests)")
+        return True
+    
+    return False
+
+def is_suspicious_request(request: Request) -> bool:
+    """Rileva richieste sospette"""
+    path = str(request.url.path).lower()
+    method = request.method.upper()
+    user_agent = request.headers.get('user-agent', '').lower()
+    
+    # Controlla pattern sospetti
+    for pattern in SUSPICIOUS_PATTERNS:
+        if pattern.lower() in path or method == pattern:
+            return True
+    
+    # Controlla user agent sospetti
+    suspicious_agents = ['curl', 'wget', 'scanner', 'bot', 'crawler']
+    for agent in suspicious_agents:
+        if agent in user_agent and 'googlebot' not in user_agent:
+            return True
+    
+    return False
 
 # Configurazione logging
 logging.basicConfig(
@@ -66,22 +132,54 @@ class UpdateIncome(BaseModel):
 # FastAPI app
 app = FastAPI()
 
-# Middleware per sicurezza e logging
+# Middleware di sicurezza avanzato
 @app.middleware("http")
-async def security_middleware(request: Request, call_next):
-    # Log richieste sospette
+async def advanced_security_middleware(request: Request, call_next):
     client_ip = request.client.host
     user_agent = request.headers.get("user-agent", "Unknown")
+    method = request.method
+    path = request.url.path
     
-    # Blocca richieste con caratteri non ASCII nel path
+    # 1. Controlla IP bloccati
+    if is_ip_blocked(client_ip):
+        logging.warning(f"🚫 Blocked IP attempted access: {client_ip} - {method} {path}")
+        return JSONResponse(status_code=403, content={"error": "Access denied"})
+    
+    # 2. Rate limiting
+    if is_rate_limited(client_ip):
+        logging.warning(f"🚫 Rate limited IP: {client_ip} - {method} {path}")
+        return JSONResponse(status_code=429, content={"error": "Too many requests"})
+    
+    # 3. Rileva richieste sospette
+    if is_suspicious_request(request):
+        BLOCKED_IPS.add(client_ip)
+        logging.warning(f"🚨 SUSPICIOUS REQUEST BLOCKED: {client_ip} - {method} {path} - UA: {user_agent}")
+        return JSONResponse(status_code=403, content={"error": "Suspicious activity detected"})
+    
+    # 4. Blocca richieste con caratteri non ASCII nel path
     try:
         request.url.path.encode('ascii')
     except UnicodeEncodeError:
-        logging.warning(f"Richiesta con caratteri non ASCII da {client_ip}: {request.url.path}")
-        return JSONResponse(status_code=400, content={"error": "Bad request"})
+        BLOCKED_IPS.add(client_ip)
+        logging.warning(f"🚨 NON-ASCII PATH BLOCKED: {client_ip} - {path}")
+        return JSONResponse(status_code=400, content={"error": "Invalid path"})
     
-    # Log richieste normali
-    logging.info(f"Request: {client_ip} - {request.method} {request.url.path}")
+    # 5. Blocca metodi HTTP non consentiti
+    allowed_methods = {'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'}
+    if method not in allowed_methods:
+        BLOCKED_IPS.add(client_ip)
+        logging.warning(f"🚨 INVALID METHOD BLOCKED: {client_ip} - {method} {path}")
+        return JSONResponse(status_code=405, content={"error": "Method not allowed"})
+    
+    # 6. Controlla lunghezza URL (anti-DoS)
+    if len(str(request.url)) > 2048:
+        BLOCKED_IPS.add(client_ip)
+        logging.warning(f"🚨 LONG URL BLOCKED: {client_ip} - URL too long")
+        return JSONResponse(status_code=414, content={"error": "URL too long"})
+    
+    # Log richieste legittime
+    if path not in ['/health', '/favicon.ico']:
+        logging.info(f"✅ Request: {client_ip} - {method} {path}")
     
     response = await call_next(request)
     return response
@@ -586,6 +684,31 @@ def get_database_stats():
         conn.close()
         raise HTTPException(status_code=500, detail=str(e))
 
+# Security monitoring endpoint
+@app.get("/admin/security", dependencies=[Depends(check_auth)])
+def get_security_stats():
+    """Statistiche di sicurezza per amministratori"""
+    total_blocked = len(BLOCKED_IPS)
+    recent_requests = sum(len(requests) for requests in REQUEST_COUNTS.values())
+    
+    # Top IP con più richieste
+    top_ips = sorted(
+        [(ip, len(requests)) for ip, requests in REQUEST_COUNTS.items()],
+        key=lambda x: x[1],
+        reverse=True
+    )[:10]
+    
+    return {
+        "blocked_ips_count": total_blocked,
+        "blocked_ips": list(BLOCKED_IPS)[:20],  # Mostra solo i primi 20
+        "active_connections": recent_requests,
+        "top_requesting_ips": top_ips,
+        "security_events": {
+            "rate_limited": len([ip for ip in BLOCKED_IPS if len(REQUEST_COUNTS.get(ip, [])) > MAX_REQUESTS_PER_IP//2]),
+            "suspicious_patterns": len([ip for ip in BLOCKED_IPS])
+        }
+    }
+
 # Health check endpoint
 @app.get("/health")
 def health_check():
@@ -597,4 +720,5 @@ if __name__ == "__main__":
     print("🚀 Avvio Family Tracker Backend...")
     print(f"📊 Database: {DB_PATH}")
     print(f"🔑 Token: {SHARED_SECRET}")
+    print(f"🛡️ Security: Rate limiting enabled ({MAX_REQUESTS_PER_IP} req/10min)")
     uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")

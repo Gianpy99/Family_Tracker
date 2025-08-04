@@ -99,6 +99,9 @@ function setupEventListeners() {
     document.getElementById('confirmReset').addEventListener('change', toggleResetButton);
     document.getElementById('resetDatabase').addEventListener('click', resetDatabase);
     
+    // Security
+    document.getElementById('loadSecurityStats').addEventListener('click', loadSecurityStats);
+    
     // Modal
     document.querySelector('.close').addEventListener('click', closeModal);
     document.getElementById('cancelEdit').addEventListener('click', closeModal);
@@ -147,6 +150,9 @@ function switchSection(sectionName) {
         case 'users':
             loadUsers();
             break;
+        case 'security':
+            loadSecurityStats();
+            break;
     }
 }
 
@@ -185,34 +191,59 @@ async function loadStats() {
 function displayStats(stats) {
     const statsGrid = document.getElementById('statsGrid');
     
-    const currencyTotalsHtml = Object.entries(stats.currency_totals)
-        .map(([currency, total]) => `${currency}: ${total.toFixed(2)}`)
+    // Combina totali spese e entrate per valuta
+    const combinedTotals = {};
+    Object.entries(stats.expense_totals || {}).forEach(([currency, total]) => {
+        combinedTotals[currency] = (combinedTotals[currency] || 0) - total; // Spese negative
+    });
+    Object.entries(stats.income_totals || {}).forEach(([currency, total]) => {
+        combinedTotals[currency] = (combinedTotals[currency] || 0) + total; // Entrate positive
+    });
+    
+    const currencyTotalsHtml = Object.entries(combinedTotals)
+        .map(([currency, total]) => {
+            const sign = total >= 0 ? '+' : '';
+            const color = total >= 0 ? 'green' : 'red';
+            return `<span style="color: ${color}">${currency}: ${sign}${total.toFixed(2)}</span>`;
+        })
         .join('<br>');
     
-    const userStatsHtml = stats.user_stats
-        .map(user => `${user.user}: ${user.count} spese (${user.total?.toFixed(2) || 0})`)
+    const expenseUserStatsHtml = (stats.expense_user_stats || [])
+        .map(user => `${user.user}: ${user.count} spese (-€${user.total?.toFixed(2) || 0})`)
+        .join('<br>');
+        
+    const incomeUserStatsHtml = (stats.income_user_stats || [])
+        .map(user => `${user.user}: ${user.count} entrate (+€${user.total?.toFixed(2) || 0})`)
         .join('<br>');
     
     statsGrid.innerHTML = `
         <div class="stat-card">
-            <div class="stat-value">${stats.expense_count}</div>
+            <div class="stat-value">${stats.expense_count || 0}</div>
             <div class="stat-label">Spese Totali</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">${stats.user_count}</div>
+            <div class="stat-value">${stats.income_count || 0}</div>
+            <div class="stat-label">Entrate Totali</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${stats.user_count || 0}</div>
             <div class="stat-label">Utenti</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">${stats.category_count}</div>
+            <div class="stat-value">${stats.category_count || 0}</div>
             <div class="stat-label">Categorie</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Totali per Valuta</div>
-            <div style="font-size: 1.2em; margin-top: 10px;">${currencyTotalsHtml || 'Nessuna spesa'}</div>
+            <div class="stat-label">Bilancio per Valuta</div>
+            <div style="font-size: 1.1em; margin-top: 10px;">${currencyTotalsHtml || 'Nessun dato'}</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Spese per Utente</div>
-            <div style="font-size: 1em; margin-top: 10px;">${userStatsHtml || 'Nessuna spesa'}</div>
+            <div style="font-size: 0.9em; margin-top: 10px;">${expenseUserStatsHtml || 'Nessuna spesa'}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Entrate per Utente</div>
+            <div style="font-size: 0.9em; margin-top: 10px;">${incomeUserStatsHtml || 'Nessuna entrata'}</div>
         </div>
     `;
 }
@@ -723,5 +754,70 @@ function showToast(message, type = 'success') {
 // Global functions for onclick handlers
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
+window.editIncome = editIncome;
+window.deleteIncome = deleteIncome;
+
+// Security Management
+async function loadSecurityStats() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/security`, { headers });
+        const securityData = await response.json();
+        
+        displaySecurityStats(securityData);
+        console.log('Statistiche sicurezza caricate:', securityData);
+    } catch (error) {
+        console.error('Errore nel caricamento statistiche sicurezza:', error);
+        showToast('Errore nel caricamento statistiche sicurezza', 'error');
+    }
+}
+
+function displaySecurityStats(data) {
+    const securityGrid = document.getElementById('securityGrid');
+    const blockedIpsList = document.getElementById('blockedIpsList');
+    const topIpsList = document.getElementById('topIpsList');
+    
+    // Grid delle statistiche principali
+    securityGrid.innerHTML = `
+        <div class="stat-card security-card">
+            <div class="stat-value">${data.blocked_ips_count}</div>
+            <div class="stat-label">IP Bloccati</div>
+        </div>
+        <div class="stat-card security-card">
+            <div class="stat-value">${data.active_connections}</div>
+            <div class="stat-label">Connessioni Attive</div>
+        </div>
+        <div class="stat-card security-card">
+            <div class="stat-value">${data.security_events.rate_limited}</div>
+            <div class="stat-label">Rate Limited</div>
+        </div>
+        <div class="stat-card security-card">
+            <div class="stat-value">${data.security_events.suspicious_patterns}</div>
+            <div class="stat-label">Pattern Sospetti</div>
+        </div>
+    `;
+    
+    // Lista IP bloccati
+    if (data.blocked_ips && data.blocked_ips.length > 0) {
+        blockedIpsList.innerHTML = data.blocked_ips
+            .map(ip => `<div class="blocked-ip">${ip}</div>`)
+            .join('');
+    } else {
+        blockedIpsList.innerHTML = '<div class="no-data">Nessun IP bloccato</div>';
+    }
+    
+    // Top IP attivi
+    if (data.top_requesting_ips && data.top_requesting_ips.length > 0) {
+        topIpsList.innerHTML = data.top_requesting_ips
+            .map(([ip, count]) => `
+                <div class="top-ip">
+                    <span class="ip-address">${ip}</span>
+                    <span class="request-count">${count} requests</span>
+                </div>
+            `)
+            .join('');
+    } else {
+        topIpsList.innerHTML = '<div class="no-data">Nessun traffico recente</div>';
+    }
+}
 window.editUser = editUser;
 window.deleteUser = deleteUser;

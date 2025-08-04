@@ -568,60 +568,90 @@ async function loadMonthlyReport() {
 
 // Mostra grafici
 function displayCharts(report) {
+    // Mostra il container dei grafici
+    const chartsContainer = document.getElementById('chartsContainer');
+    if (chartsContainer) {
+        chartsContainer.style.display = 'block';
+    }
+    
     // Grafico categorie
-    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryCtx = document.getElementById('categoryChart');
+    if (!categoryCtx) {
+        console.error('Canvas categoryChart non trovato');
+        return;
+    }
     
     if (categoryChart) {
         categoryChart.destroy();
     }
     
     const categoryData = aggregateByCategory(report.by_category);
-    categoryChart = new Chart(categoryCtx, {
-        type: 'pie',
-        data: {
-            labels: categoryData.labels,
-            datasets: [{
-                data: categoryData.values,
-                backgroundColor: [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+    if (categoryData.labels.length > 0) {
+        categoryChart = new Chart(categoryCtx.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.values,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    } else {
+        categoryCtx.getContext('2d').clearRect(0, 0, categoryCtx.width, categoryCtx.height);
+        const ctx = categoryCtx.getContext('2d');
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Nessun dato per categorie', categoryCtx.width/2, categoryCtx.height/2);
+    }
 
     // Grafico utenti
-    const userCtx = document.getElementById('userChart').getContext('2d');
+    const userCtx = document.getElementById('userChart');
+    if (!userCtx) {
+        console.error('Canvas userChart non trovato');
+        return;
+    }
     
     if (userChart) {
         userChart.destroy();
     }
     
     const userData = aggregateByUser(report.by_user);
-    userChart = new Chart(userCtx, {
-        type: 'bar',
-        data: {
-            labels: userData.labels,
-            datasets: [{
-                label: 'Spese (EUR)',
-                data: userData.values,
-                backgroundColor: '#36A2EB'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
+    if (userData.labels.length > 0) {
+        userChart = new Chart(userCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: userData.labels,
+                datasets: [{
+                    label: 'Spese (EUR)',
+                    data: userData.values,
+                    backgroundColor: '#36A2EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
-        }
-    });
+        });
+    } else {
+        userCtx.getContext('2d').clearRect(0, 0, userCtx.width, userCtx.height);
+        const ctx = userCtx.getContext('2d');
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Nessun dato per utenti', userCtx.width/2, userCtx.height/2);
+    }
 }
 
 // Aggrega dati per categoria

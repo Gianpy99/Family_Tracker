@@ -15,6 +15,7 @@
                 <button class="nav-btn" data-section="expenses">Gestisci Spese</button>
                 <button class="nav-btn" data-section="incomes">Gestisci Entrate</button>
                 <button class="nav-btn" data-section="users">Gestisci Utenti</button>
+                <button class="nav-btn" data-section="security">🛡️ Sicurezza</button>
                 <button class="nav-btn" data-section="database">Database</button>
             </div>
         </header>
@@ -109,6 +110,36 @@
                         <!-- Utenti verranno caricati dinamicamente -->
                     </div>
                     <button id="loadUsers" class="btn btn-primary">🔄 Ricarica Utenti</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Security Section -->
+        <section id="security" class="admin-section">
+            <div class="card">
+                <h2>🛡️ Monitoraggio Sicurezza</h2>
+                <div class="security-controls">
+                    <button id="loadSecurityStats" class="btn btn-primary">🔄 Aggiorna Stato Sicurezza</button>
+                </div>
+                
+                <div class="security-grid" id="securityGrid">
+                    <!-- Statistiche sicurezza verranno caricate qui -->
+                </div>
+                
+                <div class="security-details">
+                    <div class="blocked-ips-section">
+                        <h3>🚫 IP Bloccati</h3>
+                        <div id="blockedIpsList" class="blocked-ips-list">
+                            <!-- Lista IP bloccati -->
+                        </div>
+                    </div>
+                    
+                    <div class="top-ips-section">
+                        <h3>📊 Top IP Attivi</h3>
+                        <div id="topIpsList" class="top-ips-list">
+                            <!-- Lista top IP -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
