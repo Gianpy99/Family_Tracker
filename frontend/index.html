@@ -1,8 +1,30 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta char                <div class="kpi-card income">
+                 <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>💰 Entrate vs 💸 Spese</h3>
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>👥 Bilancio per Utente</h3>
+                        <canvas id="userBalanceChart"></canvas>
+                    </div>
+                </div>         <div class="kpi-icon">💰</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Entrate Totali</div>
+                        <div class="kpi-value" id="totalIncomes">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card expense">
+                    <div class="kpi-icon">💸</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Spese Totali</div>
+                        <div class="kpi-value" id="totalExpenses">€ 0.00</div>
+                    </div>
+                </div>   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Expense Tracker - Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,12 +35,87 @@
         
         <!-- Navigazione tab -->
         <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('expenses')">💸 Spese</button>
+            <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('expenses')">💸 Spese</button>
             <button class="tab-btn" onclick="switchTab('incomes')">💰 Entrate</button>
         </div>
         
+        <!-- Dashboard Overview -->
+        <div class="card" id="dashboardSection">
+            <h2>📊 Riepilogo Familiare</h2>
+            
+            <!-- Filtri periodo -->
+            <div class="dashboard-filters">
+                <label for="dashboardPeriod">Periodo:</label>
+                <select id="dashboardPeriod">
+                    <option value="month">Questo Mese</option>
+                    <option value="year">Quest'Anno</option>
+                </select>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="kpi-container">
+                <div class="kpi-card income">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Entrate Totali</div>
+                        <div class="kpi-value" id="totalIncomes">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card expense">
+                    <div class="kpi-icon">�</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Spese Totali</div>
+                        <div class="kpi-value" id="totalExpenses">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card balance">
+                    <div class="kpi-icon">📊</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Bilancio</div>
+                        <div class="kpi-value" id="totalBalance">€ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card savings">
+                    <div class="kpi-icon">🎯</div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Tasso Risparmio</div>
+                        <div class="kpi-value" id="savingsRate">0%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grafici Dashboard -->
+            <div class="dashboard-charts">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>�💰 Entrate vs 💸 Spese</h3>
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>👥 Bilancio per Utente</h3>
+                        <canvas id="userBalanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>📈 Trend Mensile</h3>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🏷️ Top Categorie Spese</h3>
+                        <canvas id="topCategoriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Sezione aggiunta spesa -->
-        <div class="card" id="expenseSection">
+        <div class="card" id="expenseSection" style="display: none;">
             <h2>Aggiungi Spesa</h2>
             <form id="expenseForm">
                 <div class="form-group">

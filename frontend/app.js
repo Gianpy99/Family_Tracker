@@ -34,7 +34,7 @@ let categories = [];
 let users = [];
 let expenses = [];
 let incomes = [];
-let currentTab = 'expenses'; // 'expenses' o 'incomes'
+let currentTab = 'dashboard'; // 'dashboard', 'expenses' o 'incomes'
 let categoryChart = null;
 let userChart = null;
 
@@ -48,8 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await loadInitialData();
     setupEventListeners();
+    setupDashboardEventListeners(); // Aggiungi event listeners dashboard
     setTodayDate();
-    await loadItems(); // Cambiato da loadExpenses a loadItems
+    
+    // Carica dashboard come vista predefinita
+    await loadDashboard();
     
     // Nasconde il messaggio di caricamento
     hideLoadingMessage();
@@ -158,22 +161,29 @@ function switchTab(tabName) {
     event.target.classList.add('active');
     
     // Mostra/nascondi sezioni
+    const dashboardSection = document.getElementById('dashboardSection');
     const expenseSection = document.getElementById('expenseSection');
     const incomeSection = document.getElementById('incomeSection');
     const recentTitle = document.getElementById('recentTitle');
     
-    if (tabName === 'expenses') {
+    // Nascondi tutte le sezioni
+    dashboardSection.style.display = 'none';
+    expenseSection.style.display = 'none';
+    incomeSection.style.display = 'none';
+    
+    if (tabName === 'dashboard') {
+        dashboardSection.style.display = 'block';
+        recentTitle.textContent = 'Dashboard Famiglia';
+        loadDashboard(); // Carica i dati della dashboard
+    } else if (tabName === 'expenses') {
         expenseSection.style.display = 'block';
-        incomeSection.style.display = 'none';
         recentTitle.textContent = 'Spese Recenti';
-    } else {
-        expenseSection.style.display = 'none';
+        loadItems(); // Ricarica la lista spese
+    } else if (tabName === 'incomes') {
         incomeSection.style.display = 'block';
         recentTitle.textContent = 'Entrate Recenti';
+        loadItems(); // Ricarica la lista entrate
     }
-    
-    // Ricarica la lista appropriata
-    loadItems();
 }
 
 // Setup event listeners
@@ -205,7 +215,13 @@ function setupAutoRefresh() {
     setInterval(async () => {
         try {
             console.log('🔄 Refresh automatico in corso...');
-            await loadItems();
+            
+            if (currentTab === 'dashboard') {
+                await loadDashboard();
+            } else {
+                await loadItems();
+            }
+            
             updateLastRefreshTime();
             console.log('✅ Refresh automatico completato');
         } catch (error) {
@@ -224,7 +240,13 @@ async function manualRefresh() {
         refreshBtn.style.animation = 'spin 1s linear infinite';
         
         console.log('🔄 Refresh manuale richiesto...');
-        await loadItems();
+        
+        if (currentTab === 'dashboard') {
+            await loadDashboard();
+        } else {
+            await loadItems();
+        }
+        
         updateLastRefreshTime();
         console.log('✅ Refresh manuale completato');
         
@@ -629,5 +651,329 @@ function hideLoadingMessage() {
     const loading = document.getElementById('loadingMessage');
     if (loading) {
         loading.remove();
+    }
+}
+
+// === FUNZIONI DASHBOARD ===
+
+// Carica i dati della dashboard
+async function loadDashboard() {
+    try {
+        console.log('🏠 Caricamento dashboard...');
+        
+        // Carica tutte le spese e entrate
+        await Promise.all([
+            loadAllExpenses(),
+            loadAllIncomes()
+        ]);
+        
+        // Calcola e mostra KPI
+        calculateKPIs();
+        
+        // Carica grafici
+        loadDashboardCharts();
+        
+        console.log('✅ Dashboard caricata');
+    } catch (error) {
+        console.error('❌ Errore nel caricamento dashboard:', error);
+        showError('Errore nel caricamento della dashboard');
+    }
+}
+
+// Carica tutte le spese per la dashboard
+async function loadAllExpenses() {
+    try {
+        const response = await fetch(`${API_BASE}/expenses`, { headers });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        expenses = await response.json();
+        console.log('💸 Spese caricate per dashboard:', expenses.length);
+    } catch (error) {
+        console.error('❌ Errore caricamento spese:', error);
+        expenses = [];
+    }
+}
+
+// Carica tutte le entrate per la dashboard
+async function loadAllIncomes() {
+    try {
+        const response = await fetch(`${API_BASE}/incomes`, { headers });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        incomes = await response.json();
+        console.log('💰 Entrate caricate per dashboard:', incomes.length);
+    } catch (error) {
+        console.error('❌ Errore caricamento entrate:', error);
+        incomes = [];
+    }
+}
+
+// Calcola e mostra i KPI
+function calculateKPIs() {
+    const currentPeriod = getPeriodFromSelector();
+    
+    // Filtra per periodo selezionato
+    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+    
+    // Calcola totali
+    const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const balance = totalIncomes - totalExpenses;
+    const savingsRate = totalIncomes > 0 ? ((balance / totalIncomes) * 100) : 0;
+    
+    // Aggiorna display
+    document.getElementById('totalExpenses').textContent = `€ ${totalExpenses.toFixed(2)}`;
+    document.getElementById('totalIncomes').textContent = `€ ${totalIncomes.toFixed(2)}`;
+    document.getElementById('totalBalance').textContent = `€ ${balance.toFixed(2)}`;
+    document.getElementById('savingsRate').textContent = `${savingsRate.toFixed(1)}%`;
+    
+    // Colora il bilancio
+    const balanceElement = document.getElementById('totalBalance');
+    balanceElement.style.color = balance >= 0 ? '#28a745' : '#dc3545';
+    
+    console.log('📊 KPI calcolati:', { totalExpenses, totalIncomes, balance, savingsRate });
+}
+
+// Ottiene il periodo dal selettore
+function getPeriodFromSelector() {
+    const periodType = document.getElementById('dashboardPeriod').value;
+    const currentDate = new Date();
+    
+    if (periodType === 'year') {
+        return {
+            type: 'year',
+            year: currentDate.getFullYear()
+        };
+    } else {
+        return {
+            type: 'month',
+            year: currentDate.getFullYear(),
+            month: currentDate.getMonth() + 1
+        };
+    }
+}
+
+// Filtra transazioni per periodo
+function filterByPeriod(transactions, period) {
+    return transactions.filter(transaction => {
+        const date = new Date(transaction.date);
+        
+        if (period.type === 'year') {
+            return date.getFullYear() === period.year;
+        } else {
+            return date.getFullYear() === period.year && 
+                   (date.getMonth() + 1) === period.month;
+        }
+    });
+}
+
+// Carica i grafici della dashboard
+function loadDashboardCharts() {
+    loadBalanceChart();
+    loadUserBalanceChart();
+    loadTrendChart();
+    loadTopCategoriesChart();
+}
+
+// Grafico Entrate vs Spese
+function loadBalanceChart() {
+    const ctx = document.getElementById('balanceChart').getContext('2d');
+    
+    const currentPeriod = getPeriodFromSelector();
+    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+    
+    const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Entrate', 'Spese'],
+            datasets: [{
+                data: [totalIncomes, totalExpenses],
+                backgroundColor: ['#28a745', '#dc3545'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Grafico bilancio per utente
+function loadUserBalanceChart() {
+    const ctx = document.getElementById('userBalanceChart').getContext('2d');
+    
+    const currentPeriod = getPeriodFromSelector();
+    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+    const filteredIncomes = filterByPeriod(incomes, currentPeriod);
+    
+    // Raggruppa per utente
+    const userBalances = {};
+    
+    filteredIncomes.forEach(income => {
+        if (!userBalances[income.user]) userBalances[income.user] = 0;
+        userBalances[income.user] += income.amount;
+    });
+    
+    filteredExpenses.forEach(expense => {
+        if (!userBalances[expense.user]) userBalances[expense.user] = 0;
+        userBalances[expense.user] -= expense.amount;
+    });
+    
+    const labels = Object.keys(userBalances);
+    const data = Object.values(userBalances);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Bilancio €',
+                data: data,
+                backgroundColor: data.map(value => value >= 0 ? '#28a745' : '#dc3545'),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Grafico trend mensile
+function loadTrendChart() {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    
+    // Ultimi 6 mesi
+    const months = [];
+    const incomeData = [];
+    const expenseData = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        
+        const monthStr = date.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' });
+        months.push(monthStr);
+        
+        const monthExpenses = expenses.filter(exp => {
+            const expDate = new Date(exp.date);
+            return expDate.getMonth() === date.getMonth() && 
+                   expDate.getFullYear() === date.getFullYear();
+        }).reduce((sum, exp) => sum + exp.amount, 0);
+        
+        const monthIncomes = incomes.filter(inc => {
+            const incDate = new Date(inc.date);
+            return incDate.getMonth() === date.getMonth() && 
+                   incDate.getFullYear() === date.getFullYear();
+        }).reduce((sum, inc) => sum + inc.amount, 0);
+        
+        expenseData.push(monthExpenses);
+        incomeData.push(monthIncomes);
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Entrate',
+                data: incomeData,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Spese',
+                data: expenseData,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Grafico top categorie spese
+function loadTopCategoriesChart() {
+    const ctx = document.getElementById('topCategoriesChart').getContext('2d');
+    
+    const currentPeriod = getPeriodFromSelector();
+    const filteredExpenses = filterByPeriod(expenses, currentPeriod);
+    
+    // Raggruppa per categoria
+    const categoryTotals = {};
+    filteredExpenses.forEach(expense => {
+        if (!categoryTotals[expense.category]) categoryTotals[expense.category] = 0;
+        categoryTotals[expense.category] += expense.amount;
+    });
+    
+    // Ordina e prendi le top 5
+    const sortedCategories = Object.entries(categoryTotals)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+    
+    const labels = sortedCategories.map(([cat, ]) => cat);
+    const data = sortedCategories.map(([, amount]) => amount);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Spese €',
+                data: data,
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y', // Rende il grafico orizzontale
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Event listener per il cambio periodo dashboard
+function setupDashboardEventListeners() {
+    const periodSelector = document.getElementById('dashboardPeriod');
+    if (periodSelector) {
+        periodSelector.addEventListener('change', () => {
+            calculateKPIs();
+            loadDashboardCharts();
+        });
     }
 }
