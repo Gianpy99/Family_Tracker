@@ -451,9 +451,7 @@ def reset_database():
         for category in default_categories:
             c.execute("INSERT INTO categories (name) VALUES (?)", (category,))
         
-        default_users = ["Dad", "Mom", "Kid1", "Kid2"]
-        for user in default_users:
-            c.execute("INSERT INTO users (name) VALUES (?)", (user,))
+        # Non creare utenti di default - gestiti dall'admin
         
         conn.commit()
         conn.close()

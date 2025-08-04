@@ -192,7 +192,7 @@ function setTodayDate() {
 }
 
 // Gestione navigazione tab
-function switchTab(tabName) {
+async function switchTab(tabName) {
     console.log(`🔄 Switching to tab: ${tabName}`);
     currentTab = tabName;
     
@@ -214,17 +214,18 @@ function switchTab(tabName) {
     if (tabName === 'dashboard') {
         dashboardSection.style.display = 'block';
         recentTitle.textContent = 'Dashboard Famiglia';
-        loadDashboard(); // Carica i dati della dashboard
+        // Carica sempre i dati della dashboard, anche se non sono stati caricati prima
+        await loadDashboard();
     } else if (tabName === 'expenses') {
         expenseSection.style.display = 'block';
         recentTitle.textContent = 'Spese Recenti';
         console.log('📝 Loading expenses for tab');
-        loadItems(); // Ricarica la lista spese
+        await loadItems(); // Ricarica la lista spese
     } else if (tabName === 'incomes') {
         incomeSection.style.display = 'block';
         recentTitle.textContent = 'Entrate Recenti';
         console.log('💰 Loading incomes for tab');
-        loadItems(); // Ricarica la lista entrate
+        await loadItems(); // Ricarica la lista entrate
     }
 }
 
