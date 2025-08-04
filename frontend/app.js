@@ -993,25 +993,41 @@ function loadDashboardCharts(allExpenses = null, allIncomes = null) {
     console.log('📈 Caricamento grafici dashboard con dati dedicati');
     
     // Distruggi grafici esistenti per evitare conflitti
-    if (balanceChart) balanceChart.destroy();
-    if (userBalanceChart) userBalanceChart.destroy();
-    if (trendChart) trendChart.destroy();
-    if (topCategoriesChart) topCategoriesChart.destroy();
+    if (balanceChart) {
+        console.log('🗑️ Distruggendo balanceChart esistente');
+        balanceChart.destroy();
+    }
+    if (userBalanceChart) {
+        console.log('🗑️ Distruggendo userBalanceChart esistente');
+        userBalanceChart.destroy();
+    }
+    if (trendChart) {
+        console.log('🗑️ Distruggendo trendChart esistente');
+        trendChart.destroy();
+    }
+    if (topCategoriesChart) {
+        console.log('🗑️ Distruggendo topCategoriesChart esistente');
+        topCategoriesChart.destroy();
+    }
     
+    console.log('📊 Caricamento singoli grafici...');
     loadBalanceChart(allExpenses, allIncomes);
     loadUserBalanceChart(allExpenses, allIncomes);
     loadTrendChart(allExpenses, allIncomes);
     loadTopCategoriesChart(allExpenses, allIncomes);
+    console.log('✅ Tutti i grafici caricati');
 }
 
 // Grafico Entrate vs Spese
 function loadBalanceChart(allExpenses = null, allIncomes = null) {
     try {
+        console.log('📊 Caricamento grafico bilancio...');
         const canvasElement = document.getElementById('balanceChart');
         if (!canvasElement) {
-            console.error('Canvas balanceChart non trovato');
+            console.error('❌ Canvas balanceChart non trovato');
             return;
         }
+        console.log('✅ Canvas balanceChart trovato');
         
         const ctx = canvasElement.getContext('2d');
         
@@ -1028,6 +1044,8 @@ function loadBalanceChart(allExpenses = null, allIncomes = null) {
         
         const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         const totalIncomes = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+        
+        console.log('📊 Dati per grafico bilancio:', { totalIncomes, totalExpenses });
         
         balanceChart = new Chart(ctx, {
         type: 'doughnut',
@@ -1048,13 +1066,15 @@ function loadBalanceChart(allExpenses = null, allIncomes = null) {
             }
         }
     });
+    console.log('✅ Grafico bilancio creato');
     } catch (error) {
-        console.error('Errore nel caricamento grafico bilancio:', error);
+        console.error('❌ Errore nel caricamento grafico bilancio:', error);
     }
 }
 
 // Grafico bilancio per utente
 function loadUserBalanceChart(allExpenses = null, allIncomes = null) {
+    console.log('👥 Caricamento grafico bilancio per utente...');
     const ctx = document.getElementById('userBalanceChart').getContext('2d');
     
     // SEMPRE usa i dati passati come parametri
@@ -1083,6 +1103,8 @@ function loadUserBalanceChart(allExpenses = null, allIncomes = null) {
     const labels = Object.keys(userBalances);
     const data = Object.values(userBalances);
     
+    console.log('👥 Dati bilancio utenti:', { labels, data });
+    
     userBalanceChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -1103,10 +1125,12 @@ function loadUserBalanceChart(allExpenses = null, allIncomes = null) {
             }
         }
     });
+    console.log('✅ Grafico bilancio utenti creato');
 }
 
 // Grafico trend mensile
 function loadTrendChart(allExpenses = null, allIncomes = null) {
+    console.log('📈 Caricamento grafico trend mensile...');
     const ctx = document.getElementById('trendChart').getContext('2d');
     
     // SEMPRE usa i dati passati come parametri
@@ -1143,6 +1167,8 @@ function loadTrendChart(allExpenses = null, allIncomes = null) {
         incomeData.push(monthIncomes);
     }
     
+    console.log('📈 Dati trend mensile:', { months, incomeData, expenseData });
+    
     trendChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1173,10 +1199,12 @@ function loadTrendChart(allExpenses = null, allIncomes = null) {
             }
         }
     });
+    console.log('✅ Grafico trend mensile creato');
 }
 
 // Grafico top categorie spese
 function loadTopCategoriesChart(allExpenses = null, allIncomes = null) {
+    console.log('🏷️ Caricamento grafico top categorie...');
     const ctx = document.getElementById('topCategoriesChart').getContext('2d');
     
     // SEMPRE usa i dati passati come parametri
@@ -1202,6 +1230,8 @@ function loadTopCategoriesChart(allExpenses = null, allIncomes = null) {
     
     const labels = sortedCategories.map(([cat, ]) => cat);
     const data = sortedCategories.map(([, amount]) => amount);
+    
+    console.log('🏷️ Dati top categorie:', { labels, data });
     
     topCategoriesChart = new Chart(ctx, {
         type: 'bar',
@@ -1230,6 +1260,7 @@ function loadTopCategoriesChart(allExpenses = null, allIncomes = null) {
             }
         }
     });
+    console.log('✅ Grafico top categorie creato');
 }
 
 // Event listener per il cambio periodo dashboard
