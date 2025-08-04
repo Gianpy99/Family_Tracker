@@ -56,21 +56,22 @@ def is_rate_limited(ip: str) -> bool:
     return False
 
 def is_suspicious_request(request: Request) -> bool:
-    """Rileva richieste sospette"""
+    """Rileva richieste sospette - versione ridotta per stabilità"""
     path = str(request.url.path).lower()
     method = request.method.upper()
     user_agent = request.headers.get('user-agent', '').lower()
     
-    # Controlla pattern sospetti
-    for pattern in SUSPICIOUS_PATTERNS:
-        if pattern.lower() in path or method == pattern:
+    # Solo pattern veramente pericolosi
+    dangerous_patterns = ['.php', '.asp', '.jsp', 'wp-admin', 'phpMyAdmin']
+    for pattern in dangerous_patterns:
+        if pattern.lower() in path:
             return True
     
-    # Controlla user agent sospetti
-    suspicious_agents = ['curl', 'wget', 'scanner', 'bot', 'crawler']
-    for agent in suspicious_agents:
-        if agent in user_agent and 'googlebot' not in user_agent:
-            return True
+    # Ignoriamo user agent sospetti per ora (troppo restrittivo)
+    # suspicious_agents = ['curl', 'wget', 'scanner', 'bot', 'crawler']
+    # for agent in suspicious_agents:
+    #     if agent in user_agent and 'googlebot' not in user_agent:
+    #         return True
     
     return False
 
@@ -132,11 +133,10 @@ class UpdateIncome(BaseModel):
 # FastAPI app
 app = FastAPI()
 
-# Middleware di sicurezza avanzato
+# Middleware di sicurezza semplificato per stabilità
 @app.middleware("http")
 async def advanced_security_middleware(request: Request, call_next):
     client_ip = request.client.host
-    user_agent = request.headers.get("user-agent", "Unknown")
     method = request.method
     path = request.url.path
     
@@ -145,40 +145,24 @@ async def advanced_security_middleware(request: Request, call_next):
         logging.warning(f"🚫 Blocked IP attempted access: {client_ip} - {method} {path}")
         return JSONResponse(status_code=403, content={"error": "Access denied"})
     
-    # 2. Rate limiting
+    # 2. Rate limiting (solo per IP veramente problematici)
     if is_rate_limited(client_ip):
         logging.warning(f"🚫 Rate limited IP: {client_ip} - {method} {path}")
         return JSONResponse(status_code=429, content={"error": "Too many requests"})
     
-    # 3. Rileva richieste sospette
+    # 3. Solo richieste veramente pericolose
     if is_suspicious_request(request):
         BLOCKED_IPS.add(client_ip)
-        logging.warning(f"🚨 SUSPICIOUS REQUEST BLOCKED: {client_ip} - {method} {path} - UA: {user_agent}")
+        logging.warning(f"🚨 DANGEROUS REQUEST BLOCKED: {client_ip} - {method} {path}")
         return JSONResponse(status_code=403, content={"error": "Suspicious activity detected"})
     
-    # 4. Blocca richieste con caratteri non ASCII nel path
-    try:
-        request.url.path.encode('ascii')
-    except UnicodeEncodeError:
-        BLOCKED_IPS.add(client_ip)
-        logging.warning(f"🚨 NON-ASCII PATH BLOCKED: {client_ip} - {path}")
-        return JSONResponse(status_code=400, content={"error": "Invalid path"})
+    # Rimuoviamo controlli troppo restrittivi per ora:
+    # - Controllo caratteri non ASCII
+    # - Controllo metodi HTTP 
+    # - Controllo lunghezza URL
     
-    # 5. Blocca metodi HTTP non consentiti
-    allowed_methods = {'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'}
-    if method not in allowed_methods:
-        BLOCKED_IPS.add(client_ip)
-        logging.warning(f"🚨 INVALID METHOD BLOCKED: {client_ip} - {method} {path}")
-        return JSONResponse(status_code=405, content={"error": "Method not allowed"})
-    
-    # 6. Controlla lunghezza URL (anti-DoS)
-    if len(str(request.url)) > 2048:
-        BLOCKED_IPS.add(client_ip)
-        logging.warning(f"🚨 LONG URL BLOCKED: {client_ip} - URL too long")
-        return JSONResponse(status_code=414, content={"error": "URL too long"})
-    
-    # Log richieste legittime
-    if path not in ['/health', '/favicon.ico']:
+    # Log richieste legittime (solo per debug)
+    if path not in ['/health', '/favicon.ico'] and 'admin' not in path:
         logging.info(f"✅ Request: {client_ip} - {method} {path}")
     
     response = await call_next(request)
@@ -256,13 +240,8 @@ def startup():
         except:
             pass
     
-    # Aggiungi utenti di default se non esistono
-    default_users = ["Dad", "Mom", "Kid1", "Kid2"]
-    for user in default_users:
-        try:
-            c.execute("INSERT OR IGNORE INTO users (name) VALUES (?)", (user,))
-        except:
-            pass
+    # Non creare più utenti di default - gli utenti vengono gestiti dall'admin
+    
     # Crea tabella per le entrate
     c.execute("""
     CREATE TABLE IF NOT EXISTS incomes (
@@ -724,6 +703,21 @@ def unblock_ip(request: dict):
         return {"message": f"IP {ip_to_unblock} successfully unblocked"}
     else:
         return {"message": f"IP {ip_to_unblock} was not blocked"}
+
+@app.post("/admin/reset-security", dependencies=[Depends(check_auth)])
+def reset_security():
+    """Reset completo del sistema di sicurezza"""
+    global BLOCKED_IPS, REQUEST_COUNTS
+    
+    blocked_count = len(BLOCKED_IPS)
+    BLOCKED_IPS.clear()
+    REQUEST_COUNTS.clear()
+    
+    logging.info(f"🔄 Security system reset - {blocked_count} IPs unblocked")
+    return {
+        "message": f"Security system reset successfully", 
+        "unblocked_ips": blocked_count
+    }
 
 # Health check endpoint
 @app.get("/health")
