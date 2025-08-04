@@ -1,20 +1,20 @@
-// Configurazione API - Auto-detect per localhost, rete locale o ngrok
+// Configurazione API - Auto-detect per localhost, rete locale o accesso esterno
 let API_BASE;
 
-// Controlla se stiamo usando ngrok (dominio *.ngrok.io o *.ngrok-free.app)
-if (window.location.hostname.includes('.ngrok.io') || window.location.hostname.includes('.ngrok-free.app')) {
-    // Per ngrok, dobbiamo usare due tunnel separati
-    // Questo URL deve essere configurato manualmente con l'URL del backend ngrok
-    API_BASE = 'https://YOUR_BACKEND_NGROK_URL.ngrok-free.app';
-    
-    // Per ora usa lo stesso dominio con porta diversa (non funzionerà, ma è un placeholder)
-    console.warn('⚠️ CONFIGURAZIONE NGROK INCOMPLETA: aggiorna API_BASE con l\'URL del backend ngrok');
-} else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     // Se siamo in localhost, usa porta 8082
     API_BASE = 'http://localhost:8082';
-} else {
+    console.log('� Localhost mode:', API_BASE);
+} else if (window.location.hostname.startsWith('192.168.') || 
+           window.location.hostname.startsWith('10.') || 
+           window.location.hostname.startsWith('172.')) {
     // Se siamo su rete locale, usa IP con porta 8082
     API_BASE = `http://${window.location.hostname}:8082`;
+    console.log('🏠 LAN mode:', API_BASE);
+} else {
+    // Accesso esterno tramite port forwarding - usa stessa porta del web
+    API_BASE = `${window.location.protocol}//${window.location.hostname}:8082`;
+    console.log('🌍 External access mode:', API_BASE);
 }
 
 const API_TOKEN = 'family_secret_token';
